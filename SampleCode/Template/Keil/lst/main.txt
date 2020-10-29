@@ -5,30 +5,30 @@
                           AREA ||i.LED_Init||, CODE, READONLY, ALIGN=2
 
                   LED_Init PROC
-;;;811    
-;;;812    void LED_Init(void)
+;;;1076   
+;;;1077   void LED_Init(void)
 000000  b510              PUSH     {r4,lr}
-;;;813    {
-;;;814    	GPIO_SetMode(PH,BIT0,GPIO_MODE_OUTPUT);
+;;;1078   {
+;;;1079   	GPIO_SetMode(PH,BIT0,GPIO_MODE_OUTPUT);
 000002  4c09              LDR      r4,|L1.40|
 000004  2201              MOVS     r2,#1
 000006  4611              MOV      r1,r2
 000008  4620              MOV      r0,r4
 00000a  f7fffffe          BL       GPIO_SetMode
-;;;815    	GPIO_SetMode(PH,BIT1,GPIO_MODE_OUTPUT);
+;;;1080   	GPIO_SetMode(PH,BIT1,GPIO_MODE_OUTPUT);
 00000e  2201              MOVS     r2,#1
 000010  2102              MOVS     r1,#2
 000012  4620              MOV      r0,r4
 000014  f7fffffe          BL       GPIO_SetMode
-;;;816    	GPIO_SetMode(PH,BIT2,GPIO_MODE_OUTPUT);
+;;;1081   	GPIO_SetMode(PH,BIT2,GPIO_MODE_OUTPUT);
 000018  4620              MOV      r0,r4
 00001a  2201              MOVS     r2,#1
 00001c  e8bd4010          POP      {r4,lr}
 000020  2104              MOVS     r1,#4
 000022  f7ffbffe          B.W      GPIO_SetMode
-;;;817    	
-;;;818    }
-;;;819    
+;;;1082   	
+;;;1083   }
+;;;1084   
                           ENDP
 
 000026  0000              DCW      0x0000
@@ -58,31 +58,31 @@
                           AREA ||i.SPI_Master_RX_PDMA||, CODE, READONLY, ALIGN=2
 
                   SPI_Master_RX_PDMA PROC
-;;;138    
-;;;139    void SPI_Master_RX_PDMA(uint8_t* Rx , uint16_t len)
+;;;150    
+;;;151    void SPI_Master_RX_PDMA(uint8_t* Rx , uint16_t len)
 000000  e92d41fc          PUSH     {r2-r8,lr}
-;;;140    {
-;;;141    	uint32_t u32RegValue = 0;
-;;;142    	uint32_t u32Abort = 0;	
-;;;143    	
-;;;144        PDMA_Open(PDMA, (1 << SPI_MASTER_RX_DMA_CH));
+;;;152    {
+;;;153    	uint32_t u32RegValue = 0;
+;;;154    	uint32_t u32Abort = 0;	
+;;;155    	
+;;;156        PDMA_Open(PDMA, (1 << SPI_MASTER_RX_DMA_CH));
 000004  4e23              LDR      r6,|L3.148|
-000006  460d              MOV      r5,r1                 ;140
-000008  4607              MOV      r7,r0                 ;140
+000006  460d              MOV      r5,r1                 ;152
+000008  4607              MOV      r7,r0                 ;152
 00000a  f44f6480          MOV      r4,#0x400
 00000e  4621              MOV      r1,r4
 000010  4630              MOV      r0,r6
 000012  f7fffffe          BL       PDMA_Open
-;;;145    
-;;;146    	//RX	
-;;;147        PDMA_SetTransferCnt(PDMA,SPI_MASTER_RX_DMA_CH, PDMA_WIDTH_8, len);
+;;;157    
+;;;158    	//RX	
+;;;159        PDMA_SetTransferCnt(PDMA,SPI_MASTER_RX_DMA_CH, PDMA_WIDTH_8, len);
 000016  462b              MOV      r3,r5
 000018  2200              MOVS     r2,#0
 00001a  210a              MOVS     r1,#0xa
 00001c  4630              MOV      r0,r6
 00001e  f7fffffe          BL       PDMA_SetTransferCnt
-;;;148        /* Set source/destination address and attributes */
-;;;149        PDMA_SetTransferAddr(PDMA,SPI_MASTER_RX_DMA_CH, (uint32_t)&SPI_FLASH_PORT->RX, PDMA_SAR_FIX, (uint32_t)Rx, PDMA_DAR_INC);
+;;;160        /* Set source/destination address and attributes */
+;;;161        PDMA_SetTransferAddr(PDMA,SPI_MASTER_RX_DMA_CH, (uint32_t)&SPI_FLASH_PORT->RX, PDMA_SAR_FIX, (uint32_t)Rx, PDMA_DAR_INC);
 000022  2500              MOVS     r5,#0
 000024  e9cd7500          STRD     r7,r5,[sp,#0]
 000028  f44f7340          MOV      r3,#0x300
@@ -90,126 +90,132 @@
 00002e  210a              MOVS     r1,#0xa
 000030  4630              MOV      r0,r6
 000032  f7fffffe          BL       PDMA_SetTransferAddr
-;;;150        /* Set request source; set basic mode. */
-;;;151        PDMA_SetTransferMode(PDMA,SPI_MASTER_RX_DMA_CH, PDMA_SPI0_RX, FALSE, 0);
+;;;162        /* Set request source; set basic mode. */
+;;;163    
+;;;164    	#if defined (M487_EVM_SPI_FLASH)
+;;;165        PDMA_SetTransferMode(PDMA,SPI_MASTER_RX_DMA_CH, PDMA_QSPI0_RX, FALSE, 0);
 000036  2300              MOVS     r3,#0
-000038  2217              MOVS     r2,#0x17
+000038  2215              MOVS     r2,#0x15
 00003a  210a              MOVS     r1,#0xa
 00003c  4630              MOV      r0,r6
 00003e  9500              STR      r5,[sp,#0]
 000040  f7fffffe          BL       PDMA_SetTransferMode
-;;;152        /* Single request type. SPI only support PDMA single request type. */
-;;;153        PDMA_SetBurstType(PDMA,SPI_MASTER_RX_DMA_CH, PDMA_REQ_SINGLE, PDMA_BURST_128);
+;;;166    	#else
+;;;167        PDMA_SetTransferMode(PDMA,SPI_MASTER_RX_DMA_CH, PDMA_SPI0_RX, FALSE, 0);
+;;;168    	#endif
+;;;169    	
+;;;170        /* Single request type. SPI only support PDMA single request type. */
+;;;171        PDMA_SetBurstType(PDMA,SPI_MASTER_RX_DMA_CH, PDMA_REQ_SINGLE, PDMA_BURST_128);
 000044  2300              MOVS     r3,#0
 000046  2204              MOVS     r2,#4
 000048  210a              MOVS     r1,#0xa
 00004a  4630              MOV      r0,r6
 00004c  f7fffffe          BL       PDMA_SetBurstType
-;;;154        /* Disable table interrupt */
-;;;155        PDMA->DSCT[SPI_MASTER_RX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
+;;;172        /* Disable table interrupt */
+;;;173        PDMA->DSCT[SPI_MASTER_RX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
 000050  f8560fa0          LDR      r0,[r6,#0xa0]!
 000054  f0400080          ORR      r0,r0,#0x80
 000058  6030              STR      r0,[r6,#0]
-;;;156    
-;;;157        SPI_TRIGGER_RX_PDMA(SPI_FLASH_PORT);
+;;;174    
+;;;175        SPI_TRIGGER_RX_PDMA(SPI_FLASH_PORT);
 00005a  4d0f              LDR      r5,|L3.152|
 00005c  3d30              SUBS     r5,r5,#0x30
 00005e  68e8              LDR      r0,[r5,#0xc]
 000060  f0400002          ORR      r0,r0,#2
 000064  60e8              STR      r0,[r5,#0xc]
-;;;158    
-;;;159        while(1)
-;;;160        {
-;;;161            /* Get interrupt status */
-;;;162            u32RegValue = PDMA_GET_INT_STATUS(PDMA);
-;;;163            /* Check the DMA transfer done interrupt flag */
-;;;164            if(u32RegValue & PDMA_INTSTS_TDIF_Msk)
-;;;165            {
-;;;166                /* Check the PDMA transfer done interrupt flags */
-;;;167                if((PDMA_GET_TD_STS(PDMA) & (1 << SPI_MASTER_RX_DMA_CH)) == (1 << SPI_MASTER_RX_DMA_CH))
+;;;176    
+;;;177        while(1)
+;;;178        {
+;;;179            /* Get interrupt status */
+;;;180            u32RegValue = PDMA_GET_INT_STATUS(PDMA);
+;;;181            /* Check the DMA transfer done interrupt flag */
+;;;182            if(u32RegValue & PDMA_INTSTS_TDIF_Msk)
+;;;183            {
+;;;184                /* Check the PDMA transfer done interrupt flags */
+;;;185                if((PDMA_GET_TD_STS(PDMA) & (1 << SPI_MASTER_RX_DMA_CH)) == (1 << SPI_MASTER_RX_DMA_CH))
 000066  490d              LDR      r1,|L3.156|
 000068  4a0c              LDR      r2,|L3.156|
 00006a  3108              ADDS     r1,r1,#8
                   |L3.108|
-00006c  6810              LDR      r0,[r2,#0]            ;162
-00006e  0783              LSLS     r3,r0,#30             ;164
+00006c  6810              LDR      r0,[r2,#0]            ;180
+00006e  0783              LSLS     r3,r0,#30             ;182
 000070  d5fc              BPL      |L3.108|
 000072  680b              LDR      r3,[r1,#0]
 000074  055b              LSLS     r3,r3,#21
 000076  d506              BPL      |L3.134|
-;;;168                {
-;;;169                    /* Clear the DMA transfer done flags */
-;;;170                    PDMA_CLR_TD_FLAG(PDMA,1 << SPI_MASTER_RX_DMA_CH);
+;;;186                {
+;;;187                    /* Clear the DMA transfer done flags */
+;;;188                    PDMA_CLR_TD_FLAG(PDMA,1 << SPI_MASTER_RX_DMA_CH);
 000078  600c              STR      r4,[r1,#0]
-;;;171                    /* Disable SPI PDMA RX function */
-;;;172                    SPI_DISABLE_RX_PDMA(SPI_FLASH_PORT);
+;;;189                    /* Disable SPI PDMA RX function */
+;;;190                    SPI_DISABLE_RX_PDMA(SPI_FLASH_PORT);
 00007a  68e8              LDR      r0,[r5,#0xc]
 00007c  f0200002          BIC      r0,r0,#2
 000080  60e8              STR      r0,[r5,#0xc]
                   |L3.130|
-;;;173                    break;
-;;;174                }
-;;;175    
-;;;176                /* Check the DMA transfer abort interrupt flag */
-;;;177                if(u32RegValue & PDMA_INTSTS_ABTIF_Msk)
-;;;178                {
-;;;179                    /* Get the target abort flag */
-;;;180                    u32Abort = PDMA_GET_ABORT_STS(PDMA);
-;;;181                    /* Clear the target abort flag */
-;;;182                    PDMA_CLR_ABORT_FLAG(PDMA,u32Abort);
-;;;183                    break;
-;;;184                }
-;;;185            }
-;;;186        }
-;;;187    
-;;;188    }
+;;;191                    break;
+;;;192                }
+;;;193    
+;;;194                /* Check the DMA transfer abort interrupt flag */
+;;;195                if(u32RegValue & PDMA_INTSTS_ABTIF_Msk)
+;;;196                {
+;;;197                    /* Get the target abort flag */
+;;;198                    u32Abort = PDMA_GET_ABORT_STS(PDMA);
+;;;199                    /* Clear the target abort flag */
+;;;200                    PDMA_CLR_ABORT_FLAG(PDMA,u32Abort);
+;;;201                    break;
+;;;202                }
+;;;203            }
+;;;204        }
+;;;205    
+;;;206    }
 000082  e8bd81fc          POP      {r2-r8,pc}
                   |L3.134|
-000086  07c0              LSLS     r0,r0,#31             ;177
+000086  07c0              LSLS     r0,r0,#31             ;195
 000088  d0f0              BEQ      |L3.108|
 00008a  4904              LDR      r1,|L3.156|
-00008c  1d09              ADDS     r1,r1,#4              ;180
-00008e  6808              LDR      r0,[r1,#0]            ;180
-000090  6008              STR      r0,[r1,#0]            ;182
+00008c  1d09              ADDS     r1,r1,#4              ;198
+00008e  6808              LDR      r0,[r1,#0]            ;198
+000090  6008              STR      r0,[r1,#0]            ;200
 000092  e7f6              B        |L3.130|
-;;;189    
+;;;207    
                           ENDP
 
                   |L3.148|
                           DCD      0x40008000
                   |L3.152|
-                          DCD      0x40061030
+                          DCD      0x40060030
                   |L3.156|
                           DCD      0x4000841c
 
                           AREA ||i.SPI_Master_TX_PDMA||, CODE, READONLY, ALIGN=2
 
                   SPI_Master_TX_PDMA PROC
-;;;189    
-;;;190    void SPI_Master_TX_PDMA(uint8_t* Tx , uint16_t len)
+;;;207    
+;;;208    void SPI_Master_TX_PDMA(uint8_t* Tx , uint16_t len)
 000000  e92d41fc          PUSH     {r2-r8,lr}
-;;;191    {
-;;;192    	uint32_t u32RegValue = 0;
-;;;193    	uint32_t u32Abort = 0;	
-;;;194    
-;;;195        PDMA_Open(PDMA, (1 << SPI_MASTER_TX_DMA_CH));
+;;;209    {
+;;;210    	uint32_t u32RegValue = 0;
+;;;211    	uint32_t u32Abort = 0;	
+;;;212    
+;;;213        PDMA_Open(PDMA, (1 << SPI_MASTER_TX_DMA_CH));
 000004  4d24              LDR      r5,|L4.152|
-000006  460f              MOV      r7,r1                 ;191
-000008  4606              MOV      r6,r0                 ;191
+000006  460f              MOV      r7,r1                 ;209
+000008  4606              MOV      r6,r0                 ;209
 00000a  f44f7400          MOV      r4,#0x200
 00000e  4621              MOV      r1,r4
 000010  4628              MOV      r0,r5
 000012  f7fffffe          BL       PDMA_Open
-;;;196    
-;;;197    	//TX
-;;;198        PDMA_SetTransferCnt(PDMA,SPI_MASTER_TX_DMA_CH, PDMA_WIDTH_8, len);
+;;;214    
+;;;215    	//TX
+;;;216        PDMA_SetTransferCnt(PDMA,SPI_MASTER_TX_DMA_CH, PDMA_WIDTH_8, len);
 000016  463b              MOV      r3,r7
 000018  2200              MOVS     r2,#0
 00001a  2109              MOVS     r1,#9
 00001c  4628              MOV      r0,r5
 00001e  f7fffffe          BL       PDMA_SetTransferCnt
-;;;199        /* Set source/destination address and attributes */
-;;;200        PDMA_SetTransferAddr(PDMA,SPI_MASTER_TX_DMA_CH, (uint32_t)Tx, PDMA_SAR_INC, (uint32_t)&SPI_FLASH_PORT->TX, PDMA_DAR_FIX);
+;;;217        /* Set source/destination address and attributes */
+;;;218        PDMA_SetTransferAddr(PDMA,SPI_MASTER_TX_DMA_CH, (uint32_t)Tx, PDMA_SAR_INC, (uint32_t)&SPI_FLASH_PORT->TX, PDMA_DAR_FIX);
 000022  f44f6140          MOV      r1,#0xc00
 000026  481d              LDR      r0,|L4.156|
 000028  e9cd0100          STRD     r0,r1,[sp,#0]
@@ -218,104 +224,110 @@
 000030  2109              MOVS     r1,#9
 000032  4628              MOV      r0,r5
 000034  f7fffffe          BL       PDMA_SetTransferAddr
-;;;201        /* Set request source; set basic mode. */
-;;;202        PDMA_SetTransferMode(PDMA,SPI_MASTER_TX_DMA_CH, PDMA_SPI0_TX, FALSE, 0);
+;;;219        /* Set request source; set basic mode. */
+;;;220    	
+;;;221    	#if defined (M487_EVM_SPI_FLASH)
+;;;222        PDMA_SetTransferMode(PDMA,SPI_MASTER_TX_DMA_CH, PDMA_QSPI0_TX, FALSE, 0);
 000038  2000              MOVS     r0,#0
 00003a  4603              MOV      r3,r0
 00003c  9000              STR      r0,[sp,#0]
-00003e  2216              MOVS     r2,#0x16
+00003e  2214              MOVS     r2,#0x14
 000040  2109              MOVS     r1,#9
 000042  4628              MOV      r0,r5
 000044  f7fffffe          BL       PDMA_SetTransferMode
-;;;203        /* Single request type. SPI only support PDMA single request type. */
-;;;204        PDMA_SetBurstType(PDMA,SPI_MASTER_TX_DMA_CH, PDMA_REQ_SINGLE, PDMA_BURST_128);
+;;;223    	#else
+;;;224        PDMA_SetTransferMode(PDMA,SPI_MASTER_TX_DMA_CH, PDMA_SPI0_TX, FALSE, 0);
+;;;225    	#endif	
+;;;226    	
+;;;227        /* Single request type. SPI only support PDMA single request type. */
+;;;228        PDMA_SetBurstType(PDMA,SPI_MASTER_TX_DMA_CH, PDMA_REQ_SINGLE, PDMA_BURST_128);
 000048  2300              MOVS     r3,#0
 00004a  2204              MOVS     r2,#4
 00004c  2109              MOVS     r1,#9
 00004e  4628              MOV      r0,r5
 000050  f7fffffe          BL       PDMA_SetBurstType
-;;;205        /* Disable table interrupt */
-;;;206        PDMA->DSCT[SPI_MASTER_TX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
+;;;229        /* Disable table interrupt */
+;;;230        PDMA->DSCT[SPI_MASTER_TX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
 000054  f8550f90          LDR      r0,[r5,#0x90]!
 000058  f0400080          ORR      r0,r0,#0x80
 00005c  6028              STR      r0,[r5,#0]
-;;;207    
-;;;208        SPI_TRIGGER_TX_PDMA(SPI_FLASH_PORT);
+;;;231    
+;;;232        SPI_TRIGGER_TX_PDMA(SPI_FLASH_PORT);
 00005e  4d0f              LDR      r5,|L4.156|
 000060  3d20              SUBS     r5,r5,#0x20
 000062  68e8              LDR      r0,[r5,#0xc]
 000064  f0400001          ORR      r0,r0,#1
 000068  60e8              STR      r0,[r5,#0xc]
-;;;209    
-;;;210        while(1)
-;;;211        {
-;;;212            /* Get interrupt status */
-;;;213            u32RegValue = PDMA_GET_INT_STATUS(PDMA);
-;;;214            /* Check the DMA transfer done interrupt flag */
-;;;215            if(u32RegValue & PDMA_INTSTS_TDIF_Msk)
-;;;216            {
-;;;217                /* Check the PDMA transfer done interrupt flags */
-;;;218                if((PDMA_GET_TD_STS(PDMA) & (1 << SPI_MASTER_TX_DMA_CH)) == (1 << SPI_MASTER_TX_DMA_CH))
+;;;233    
+;;;234        while(1)
+;;;235        {
+;;;236            /* Get interrupt status */
+;;;237            u32RegValue = PDMA_GET_INT_STATUS(PDMA);
+;;;238            /* Check the DMA transfer done interrupt flag */
+;;;239            if(u32RegValue & PDMA_INTSTS_TDIF_Msk)
+;;;240            {
+;;;241                /* Check the PDMA transfer done interrupt flags */
+;;;242                if((PDMA_GET_TD_STS(PDMA) & (1 << SPI_MASTER_TX_DMA_CH)) == (1 << SPI_MASTER_TX_DMA_CH))
 00006a  490d              LDR      r1,|L4.160|
 00006c  4a0c              LDR      r2,|L4.160|
 00006e  3108              ADDS     r1,r1,#8
                   |L4.112|
-000070  6810              LDR      r0,[r2,#0]            ;213
-000072  0783              LSLS     r3,r0,#30             ;215
+000070  6810              LDR      r0,[r2,#0]            ;237
+000072  0783              LSLS     r3,r0,#30             ;239
 000074  d5fc              BPL      |L4.112|
 000076  680b              LDR      r3,[r1,#0]
 000078  059b              LSLS     r3,r3,#22
 00007a  d506              BPL      |L4.138|
-;;;219                {
-;;;220                    /* Clear the DMA transfer done flags */
-;;;221                    PDMA_CLR_TD_FLAG(PDMA,1 << SPI_MASTER_TX_DMA_CH);
+;;;243                {
+;;;244                    /* Clear the DMA transfer done flags */
+;;;245                    PDMA_CLR_TD_FLAG(PDMA,1 << SPI_MASTER_TX_DMA_CH);
 00007c  600c              STR      r4,[r1,#0]
-;;;222                    /* Disable SPI PDMA TX function */
-;;;223                    SPI_DISABLE_TX_PDMA(SPI_FLASH_PORT);
+;;;246                    /* Disable SPI PDMA TX function */
+;;;247                    SPI_DISABLE_TX_PDMA(SPI_FLASH_PORT);
 00007e  68e8              LDR      r0,[r5,#0xc]
 000080  f0200001          BIC      r0,r0,#1
 000084  60e8              STR      r0,[r5,#0xc]
                   |L4.134|
-;;;224                    break;
-;;;225                }
-;;;226    
-;;;227                /* Check the DMA transfer abort interrupt flag */
-;;;228                if(u32RegValue & PDMA_INTSTS_ABTIF_Msk)
-;;;229                {
-;;;230                    /* Get the target abort flag */
-;;;231                    u32Abort = PDMA_GET_ABORT_STS(PDMA);
-;;;232                    /* Clear the target abort flag */
-;;;233                    PDMA_CLR_ABORT_FLAG(PDMA,u32Abort);
-;;;234                    break;
-;;;235                }
-;;;236            }
-;;;237        }
-;;;238    
-;;;239    }
+;;;248                    break;
+;;;249                }
+;;;250    
+;;;251                /* Check the DMA transfer abort interrupt flag */
+;;;252                if(u32RegValue & PDMA_INTSTS_ABTIF_Msk)
+;;;253                {
+;;;254                    /* Get the target abort flag */
+;;;255                    u32Abort = PDMA_GET_ABORT_STS(PDMA);
+;;;256                    /* Clear the target abort flag */
+;;;257                    PDMA_CLR_ABORT_FLAG(PDMA,u32Abort);
+;;;258                    break;
+;;;259                }
+;;;260            }
+;;;261        }
+;;;262    
+;;;263    }
 000086  e8bd81fc          POP      {r2-r8,pc}
                   |L4.138|
-00008a  07c0              LSLS     r0,r0,#31             ;228
+00008a  07c0              LSLS     r0,r0,#31             ;252
 00008c  d0f0              BEQ      |L4.112|
 00008e  4904              LDR      r1,|L4.160|
-000090  1d09              ADDS     r1,r1,#4              ;231
-000092  6808              LDR      r0,[r1,#0]            ;231
-000094  6008              STR      r0,[r1,#0]            ;233
+000090  1d09              ADDS     r1,r1,#4              ;255
+000092  6808              LDR      r0,[r1,#0]            ;255
+000094  6008              STR      r0,[r1,#0]            ;257
 000096  e7f6              B        |L4.134|
-;;;240    
+;;;264    
                           ENDP
 
                   |L4.152|
                           DCD      0x40008000
                   |L4.156|
-                          DCD      0x40061020
+                          DCD      0x40060020
                   |L4.160|
                           DCD      0x4000841c
 
                           AREA ||i.SYS_Init||, CODE, READONLY, ALIGN=2
 
                   SYS_Init PROC
-;;;819    
-;;;820    void SYS_Init(void)
+;;;1084   
+;;;1085   void SYS_Init(void)
 000000  b570              PUSH     {r4-r6,lr}
 000002  2059              MOVS     r0,#0x59
 000004  0784              LSLS     r4,r0,#30
@@ -328,206 +340,262 @@
 000016  f8d43100          LDR      r3,[r4,#0x100]
 00001a  2b00              CMP      r3,#0
 00001c  d0f5              BEQ      |L5.10|
-;;;821    {
-;;;822        /*---------------------------------------------------------------------------------------------------------*/
-;;;823        /* Init System Clock                                                                                       */
-;;;824        /*---------------------------------------------------------------------------------------------------------*/
-;;;825        /* Unlock protected registers */
-;;;826        SYS_UnlockReg();
-;;;827    
-;;;828        /* Set XT1_OUT(PF.2) and XT1_IN(PF.3) to input mode */
-;;;829        PF->MODE &= ~(GPIO_MODE_MODE2_Msk | GPIO_MODE_MODE3_Msk);
+;;;1086   {
+;;;1087       /*---------------------------------------------------------------------------------------------------------*/
+;;;1088       /* Init System Clock                                                                                       */
+;;;1089       /*---------------------------------------------------------------------------------------------------------*/
+;;;1090       /* Unlock protected registers */
+;;;1091       SYS_UnlockReg();
+;;;1092   
+;;;1093       /* Set XT1_OUT(PF.2) and XT1_IN(PF.3) to input mode */
+;;;1094       PF->MODE &= ~(GPIO_MODE_MODE2_Msk | GPIO_MODE_MODE3_Msk);
 00001e  f04f2540          MOV      r5,#0x40004000
 000022  f8d50140          LDR      r0,[r5,#0x140]
 000026  f02000f0          BIC      r0,r0,#0xf0
 00002a  f8c50140          STR      r0,[r5,#0x140]
-;;;830    
-;;;831        /* Enable External XTAL (4~24 MHz) */
-;;;832        CLK_EnableXtalRC(CLK_PWRCTL_HXTEN_Msk);
+;;;1095   
+;;;1096       /* Enable External XTAL (4~24 MHz) */
+;;;1097       CLK_EnableXtalRC(CLK_PWRCTL_HXTEN_Msk);
 00002e  2001              MOVS     r0,#1
-000030  f7fffffe          BL       CLK_EnableXtalRC
-;;;833    
-;;;834        /* Waiting for 12MHz clock ready */
-;;;835        CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-000034  2001              MOVS     r0,#1
-000036  f7fffffe          BL       CLK_WaitClockReady
-;;;836    
-;;;837        /* Set core clock as PLL_CLOCK from PLL */
-;;;838        CLK_SetCoreClock(FREQ_192MHZ);
-00003a  481d              LDR      r0,|L5.176|
-00003c  f7fffffe          BL       CLK_SetCoreClock
-;;;839        /* Set PCLK0/PCLK1 to HCLK/2 */
-;;;840        CLK->PCLKDIV = (CLK_PCLKDIV_APB0DIV_DIV2 | CLK_PCLKDIV_APB1DIV_DIV2);
-000040  2011              MOVS     r0,#0x11
-000042  f8c40234          STR      r0,[r4,#0x234]
-;;;841    
-;;;842        /* Enable UART clock */
-;;;843        CLK_EnableModuleClock(UART0_MODULE);
-000046  4e1b              LDR      r6,|L5.180|
-000048  4630              MOV      r0,r6
-00004a  f7fffffe          BL       CLK_EnableModuleClock
-;;;844    
-;;;845        /* Select UART clock source from HXT */
-;;;846        CLK_SetModuleClock(UART0_MODULE, CLK_CLKSEL1_UART0SEL_HXT, CLK_CLKDIV0_UART0(1));
-00004e  2200              MOVS     r2,#0
-000050  4611              MOV      r1,r2
-000052  4630              MOV      r0,r6
-000054  f7fffffe          BL       CLK_SetModuleClock
-;;;847    
-;;;848        CLK_SetModuleClock(SPI0_MODULE, CLK_CLKSEL2_SPI0SEL_PCLK1, MODULE_NoMsk);
-000058  4e17              LDR      r6,|L5.184|
-00005a  2200              MOVS     r2,#0
-00005c  2120              MOVS     r1,#0x20
-00005e  4630              MOV      r0,r6
-000060  f7fffffe          BL       CLK_SetModuleClock
-;;;849        CLK_EnableModuleClock(SPI0_MODULE);
-000064  4630              MOV      r0,r6
-000066  f7fffffe          BL       CLK_EnableModuleClock
-;;;850    
-;;;851        CLK_EnableModuleClock(PDMA_MODULE);
-00006a  2001              MOVS     r0,#1
-00006c  f7fffffe          BL       CLK_EnableModuleClock
-;;;852    
-;;;853    	TIMER0_HW_Init();
-000070  f7fffffe          BL       TIMER0_HW_Init
-;;;854    	TIMER1_HW_Init();
-000074  f7fffffe          BL       TIMER1_HW_Init
-;;;855    	
-;;;856        /* Update System Core Clock */
-;;;857        /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
-;;;858        SystemCoreClockUpdate();
-000078  f7fffffe          BL       SystemCoreClockUpdate
-;;;859    
-;;;860        /* Set GPB multi-function pins for UART0 RXD and TXD */
-;;;861        SYS->GPB_MFPH &= ~(SYS_GPB_MFPH_PB12MFP_Msk | SYS_GPB_MFPH_PB13MFP_Msk);
-00007c  6be0              LDR      r0,[r4,#0x3c]
-00007e  f420007f          BIC      r0,r0,#0xff0000
-000082  63e0              STR      r0,[r4,#0x3c]
-;;;862        SYS->GPB_MFPH |= (SYS_GPB_MFPH_PB12MFP_UART0_RXD | SYS_GPB_MFPH_PB13MFP_UART0_TXD);
-000084  6be0              LDR      r0,[r4,#0x3c]
-000086  f44000cc          ORR      r0,r0,#0x660000
-00008a  63e0              STR      r0,[r4,#0x3c]
-;;;863    
-;;;864    	//conflict with EVM UART pin , PB12/PB13
-;;;865    	#if defined (CUSTOM_SPI_FLASH_PIN)	
-;;;866    
-;;;867        /* Setup SPI0 multi-function pins */
-;;;868        SYS->GPB_MFPH |= SYS_GPB_MFPH_PB12MFP_SPI0_MOSI | SYS_GPB_MFPH_PB13MFP_SPI0_MISO | SYS_GPB_MFPH_PB14MFP_SPI0_CLK | SYS_GPB_MFPH_PB15MFP_SPI0_SS;
-;;;869    
-;;;870        /* Enable SPI0 clock pin (PA2) schmitt trigger */
-;;;871        PB->SMTEN |= GPIO_SMTEN_SMTEN14_Msk;
-;;;872    
-;;;873        /* Enable SPI0 I/O high slew rate */
-;;;874        GPIO_SetSlewCtl(PB, 0xF, GPIO_SLEWCTL_HIGH);
-;;;875    
-;;;876    	#else
-;;;877        /* Setup SPI0 multi-function pins */
-;;;878        SYS->GPA_MFPL |= SYS_GPA_MFPL_PA0MFP_SPI0_MOSI | SYS_GPA_MFPL_PA1MFP_SPI0_MISO | SYS_GPA_MFPL_PA2MFP_SPI0_CLK | SYS_GPA_MFPL_PA3MFP_SPI0_SS;
-00008c  6b20              LDR      r0,[r4,#0x30]
-00008e  f2444144          MOV      r1,#0x4444
-000092  4308              ORRS     r0,r0,r1
-000094  6320              STR      r0,[r4,#0x30]
-;;;879    
-;;;880        /* Enable SPI0 clock pin (PA2) schmitt trigger */
-;;;881        PA->SMTEN |= GPIO_SMTEN_SMTEN2_Msk;
-000096  6a68              LDR      r0,[r5,#0x24]
-000098  f0400004          ORR      r0,r0,#4
-00009c  6268              STR      r0,[r5,#0x24]
-;;;882    
-;;;883        /* Enable SPI0 I/O high slew rate */
-;;;884        GPIO_SetSlewCtl(PA, 0xF, GPIO_SLEWCTL_HIGH);
-00009e  2201              MOVS     r2,#1
-0000a0  210f              MOVS     r1,#0xf
-0000a2  4628              MOV      r0,r5
-0000a4  f7fffffe          BL       GPIO_SetSlewCtl
-0000a8  2000              MOVS     r0,#0
-0000aa  f8c40100          STR      r0,[r4,#0x100]
-;;;885    	#endif
-;;;886    	
-;;;887        /* Lock protected registers */
-;;;888        SYS_LockReg();
-;;;889    }
-0000ae  bd70              POP      {r4-r6,pc}
-;;;890    
+000030  f50575a0          ADD      r5,r5,#0x140
+000034  f7fffffe          BL       CLK_EnableXtalRC
+;;;1098   
+;;;1099       /* Waiting for 12MHz clock ready */
+;;;1100       CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
+000038  2001              MOVS     r0,#1
+00003a  f7fffffe          BL       CLK_WaitClockReady
+;;;1101   
+;;;1102       /* Set core clock as PLL_CLOCK from PLL */
+;;;1103       CLK_SetCoreClock(FREQ_192MHZ);
+00003e  4820              LDR      r0,|L5.192|
+000040  f7fffffe          BL       CLK_SetCoreClock
+;;;1104       /* Set PCLK0/PCLK1 to HCLK/2 */
+;;;1105       CLK->PCLKDIV = (CLK_PCLKDIV_APB0DIV_DIV2 | CLK_PCLKDIV_APB1DIV_DIV2);
+000044  2011              MOVS     r0,#0x11
+000046  f8c40234          STR      r0,[r4,#0x234]
+;;;1106   
+;;;1107       /* Enable UART clock */
+;;;1108       CLK_EnableModuleClock(UART0_MODULE);
+00004a  4e1e              LDR      r6,|L5.196|
+00004c  4630              MOV      r0,r6
+00004e  f7fffffe          BL       CLK_EnableModuleClock
+;;;1109   
+;;;1110       /* Select UART clock source from HXT */
+;;;1111       CLK_SetModuleClock(UART0_MODULE, CLK_CLKSEL1_UART0SEL_HXT, CLK_CLKDIV0_UART0(1));
+000052  2200              MOVS     r2,#0
+000054  4611              MOV      r1,r2
+000056  4630              MOV      r0,r6
+000058  f7fffffe          BL       CLK_SetModuleClock
+;;;1112   
+;;;1113   	#if defined (M487_EVM_SPI_FLASH)	
+;;;1114       CLK_SetModuleClock(QSPI0_MODULE, CLK_CLKSEL2_QSPI0SEL_PCLK0, MODULE_NoMsk);
+00005c  4e1a              LDR      r6,|L5.200|
+00005e  2200              MOVS     r2,#0
+000060  2108              MOVS     r1,#8
+000062  4630              MOV      r0,r6
+000064  f7fffffe          BL       CLK_SetModuleClock
+;;;1115       CLK_EnableModuleClock(QSPI0_MODULE);
+000068  4630              MOV      r0,r6
+00006a  f7fffffe          BL       CLK_EnableModuleClock
+;;;1116   	#else
+;;;1117       CLK_SetModuleClock(SPI0_MODULE, CLK_CLKSEL2_SPI0SEL_PCLK1, MODULE_NoMsk);
+;;;1118       CLK_EnableModuleClock(SPI0_MODULE);
+;;;1119   	#endif
+;;;1120   
+;;;1121       CLK_EnableModuleClock(PDMA_MODULE);
+00006e  2001              MOVS     r0,#1
+000070  f7fffffe          BL       CLK_EnableModuleClock
+;;;1122   
+;;;1123   	TIMER0_HW_Init();
+000074  f7fffffe          BL       TIMER0_HW_Init
+;;;1124   	TIMER1_HW_Init();
+000078  f7fffffe          BL       TIMER1_HW_Init
+;;;1125   	
+;;;1126       /* Update System Core Clock */
+;;;1127       /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+;;;1128       SystemCoreClockUpdate();
+00007c  f7fffffe          BL       SystemCoreClockUpdate
+;;;1129   
+;;;1130       /* Set GPB multi-function pins for UART0 RXD and TXD */
+;;;1131       SYS->GPB_MFPH &= ~(SYS_GPB_MFPH_PB12MFP_Msk | SYS_GPB_MFPH_PB13MFP_Msk);
+000080  6be0              LDR      r0,[r4,#0x3c]
+000082  f420007f          BIC      r0,r0,#0xff0000
+000086  63e0              STR      r0,[r4,#0x3c]
+;;;1132       SYS->GPB_MFPH |= (SYS_GPB_MFPH_PB12MFP_UART0_RXD | SYS_GPB_MFPH_PB13MFP_UART0_TXD);
+000088  6be0              LDR      r0,[r4,#0x3c]
+00008a  f44000cc          ORR      r0,r0,#0x660000
+00008e  63e0              STR      r0,[r4,#0x3c]
+;;;1133   
+;;;1134   	//conflict with EVM UART pin , PB12/PB13
+;;;1135   	#if defined (CUSTOM_SPI_FLASH_PIN)	
+;;;1136       /* Setup SPI0 multi-function pins */
+;;;1137       SYS->GPB_MFPH |= SYS_GPB_MFPH_PB12MFP_SPI0_MOSI | SYS_GPB_MFPH_PB13MFP_SPI0_MISO | SYS_GPB_MFPH_PB14MFP_SPI0_CLK | SYS_GPB_MFPH_PB15MFP_SPI0_SS;
+;;;1138   
+;;;1139       /* Enable SPI0 clock pin (PA2) schmitt trigger */
+;;;1140       PB->SMTEN |= GPIO_SMTEN_SMTEN14_Msk;
+;;;1141   
+;;;1142       /* Enable SPI0 I/O high slew rate */
+;;;1143       GPIO_SetSlewCtl(PB, 0xF, GPIO_SLEWCTL_HIGH);
+;;;1144   
+;;;1145   	#elif defined (M487_EVM_SPI_FLASH)
+;;;1146       SYS->GPC_MFPL &= ~(SYS_GPC_MFPL_PC2MFP_Msk | SYS_GPC_MFPL_PC3MFP_Msk| SYS_GPC_MFPL_PC1MFP_Msk| SYS_GPC_MFPL_PC0MFP_Msk);
+000090  6c20              LDR      r0,[r4,#0x40]
+000092  f36f000f          BFC      r0,#0,#16
+000096  6420              STR      r0,[r4,#0x40]
+;;;1147   	
+;;;1148       /* Setup SPI0 multi-function pins */
+;;;1149       SYS->GPC_MFPL |= SYS_GPC_MFPL_PC0MFP_QSPI0_MOSI0 | SYS_GPC_MFPL_PC1MFP_QSPI0_MISO0 | SYS_GPC_MFPL_PC2MFP_QSPI0_CLK | SYS_GPC_MFPL_PC3MFP_QSPI0_SS;
+000098  6c20              LDR      r0,[r4,#0x40]
+00009a  f2444144          MOV      r1,#0x4444
+00009e  4308              ORRS     r0,r0,r1
+0000a0  6420              STR      r0,[r4,#0x40]
+;;;1150   
+;;;1151       /* Enable SPI0 clock pin (PA2) schmitt trigger */
+;;;1152   //    PC->SMTEN |= GPIO_SMTEN_SMTEN1_Msk;
+;;;1153       PC->SMTEN |= (GPIO_SMTEN_SMTEN0_Msk | GPIO_SMTEN_SMTEN1_Msk | GPIO_SMTEN_SMTEN2_Msk | GPIO_SMTEN_SMTEN3_Msk);
+0000a2  f8550c9c          LDR      r0,[r5,#-0x9c]
+0000a6  f040000f          ORR      r0,r0,#0xf
+0000aa  f8450c9c          STR      r0,[r5,#-0x9c]
+;;;1154   	
+;;;1155       /* Enable SPI0 I/O high slew rate */
+;;;1156   //    GPIO_SetSlewCtl(PC, 0xF, GPIO_SLEWCTL_HIGH);
+;;;1157   	GPIO_SetSlewCtl(PC, (BIT0 | BIT1 | BIT2 | BIT3), GPIO_SLEWCTL_FAST);
+0000ae  2202              MOVS     r2,#2
+0000b0  210f              MOVS     r1,#0xf
+0000b2  4806              LDR      r0,|L5.204|
+0000b4  f7fffffe          BL       GPIO_SetSlewCtl
+0000b8  2000              MOVS     r0,#0
+0000ba  f8c40100          STR      r0,[r4,#0x100]
+;;;1158   	
+;;;1159   	#else
+;;;1160       /* Setup SPI0 multi-function pins */
+;;;1161       SYS->GPA_MFPL |= SYS_GPA_MFPL_PA0MFP_SPI0_MOSI | SYS_GPA_MFPL_PA1MFP_SPI0_MISO | SYS_GPA_MFPL_PA2MFP_SPI0_CLK | SYS_GPA_MFPL_PA3MFP_SPI0_SS;
+;;;1162   
+;;;1163       /* Enable SPI0 clock pin (PA2) schmitt trigger */
+;;;1164       PA->SMTEN |= GPIO_SMTEN_SMTEN2_Msk;
+;;;1165   
+;;;1166       /* Enable SPI0 I/O high slew rate */
+;;;1167       GPIO_SetSlewCtl(PA, 0xF, GPIO_SLEWCTL_HIGH);
+;;;1168   	#endif
+;;;1169   	
+;;;1170       /* Lock protected registers */
+;;;1171       SYS_LockReg();
+;;;1172   }
+0000be  bd70              POP      {r4-r6,pc}
+;;;1173   
                           ENDP
 
-                  |L5.176|
+                  |L5.192|
                           DCD      0x0b71b000
-                  |L5.180|
+                  |L5.196|
                           DCD      0x57803d10
-                  |L5.184|
-                          DCD      0x6640000d
+                  |L5.200|
+                          DCD      0x6620000c
+                  |L5.204|
+                          DCD      0x40004080
 
                           AREA ||i.SpiFlash_ChipErase||, CODE, READONLY, ALIGN=2
 
                   SpiFlash_ChipErase PROC
-;;;271    
-;;;272    void SpiFlash_ChipErase(void)
+;;;324    
+;;;325    void SpiFlash_ChipErase(void)
 000000  4812              LDR      r0,|L6.76|
-;;;273    {
-;;;274        // /CS: active
-;;;275        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;326    {
+;;;327    	#if defined (M487_EVM_SPI_FLASH)
+;;;328        // /CS: active
+;;;329        QSPI_SET_SS_LOW(SPI_FLASH_PORT);
 000002  6881              LDR      r1,[r0,#8]
 000004  f021010c          BIC      r1,r1,#0xc
 000008  f0410101          ORR      r1,r1,#1
 00000c  6081              STR      r1,[r0,#8]
-;;;276    
-;;;277        // send Command: 0x06, Write enable
-;;;278        SPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
+;;;330    
+;;;331        // send Command: 0x06, Write enable
+;;;332        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
 00000e  2106              MOVS     r1,#6
 000010  6201              STR      r1,[r0,#0x20]
                   |L6.18|
-;;;279    
-;;;280        // wait tx finish
-;;;281        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;333    
+;;;334        // wait tx finish
+;;;335        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
 000012  6941              LDR      r1,[r0,#0x14]
 000014  07c9              LSLS     r1,r1,#31
 000016  d1fc              BNE      |L6.18|
-;;;282    
-;;;283        // /CS: de-active
-;;;284        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;336    
+;;;337        // /CS: de-active
+;;;338        QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
 000018  6881              LDR      r1,[r0,#8]
 00001a  f0210108          BIC      r1,r1,#8
 00001e  f0410105          ORR      r1,r1,#5
 000022  6081              STR      r1,[r0,#8]
-;;;285    
-;;;286        //////////////////////////////////////////
-;;;287    
-;;;288        // /CS: active
-;;;289        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;339    
+;;;340        //////////////////////////////////////////
+;;;341    
+;;;342        // /CS: active
+;;;343        QSPI_SET_SS_LOW(SPI_FLASH_PORT);
 000024  6881              LDR      r1,[r0,#8]
 000026  f021010c          BIC      r1,r1,#0xc
 00002a  f0410101          ORR      r1,r1,#1
 00002e  6081              STR      r1,[r0,#8]
-;;;290    
-;;;291        // send Command: 0xC7, Chip Erase
-;;;292        SPI_WRITE_TX(SPI_FLASH_PORT, 0xC7);
+;;;344    
+;;;345        // send Command: 0xC7, Chip Erase
+;;;346        QSPI_WRITE_TX(SPI_FLASH_PORT, 0xC7);
 000030  21c7              MOVS     r1,#0xc7
 000032  6201              STR      r1,[r0,#0x20]
                   |L6.52|
-;;;293    
-;;;294        // wait tx finish
-;;;295        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;347    
+;;;348        // wait tx finish
+;;;349        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
 000034  6941              LDR      r1,[r0,#0x14]
 000036  07c9              LSLS     r1,r1,#31
 000038  d1fc              BNE      |L6.52|
-;;;296    
-;;;297        // /CS: de-active
-;;;298        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;350    
+;;;351        // /CS: de-active
+;;;352        QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
 00003a  6881              LDR      r1,[r0,#8]
 00003c  f0210108          BIC      r1,r1,#8
 000040  f0410105          ORR      r1,r1,#5
 000044  6081              STR      r1,[r0,#8]
-;;;299    
-;;;300        SPI_ClearRxFIFO(SPI_FLASH_PORT);
-000046  f7ffbffe          B.W      SPI_ClearRxFIFO
-;;;301    }
-;;;302    
+;;;353    
+;;;354        QSPI_ClearRxFIFO(SPI_FLASH_PORT);
+000046  f7ffbffe          B.W      QSPI_ClearRxFIFO
+;;;355    
+;;;356    	#else
+;;;357    
+;;;358        // /CS: active
+;;;359        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;360    
+;;;361        // send Command: 0x06, Write enable
+;;;362        SPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
+;;;363    
+;;;364        // wait tx finish
+;;;365        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;366    
+;;;367        // /CS: de-active
+;;;368        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;369    
+;;;370        //////////////////////////////////////////
+;;;371    
+;;;372        // /CS: active
+;;;373        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;374    
+;;;375        // send Command: 0xC7, Chip Erase
+;;;376        SPI_WRITE_TX(SPI_FLASH_PORT, 0xC7);
+;;;377    
+;;;378        // wait tx finish
+;;;379        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;380    
+;;;381        // /CS: de-active
+;;;382        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;383    
+;;;384        SPI_ClearRxFIFO(SPI_FLASH_PORT);
+;;;385    	#endif
+;;;386    }
+;;;387    
                           ENDP
 
 00004a  0000              DCW      0x0000
                   |L6.76|
-                          DCD      0x40061000
+                          DCD      0x40060000
 
                           AREA ||i.SpiFlash_Init||, CODE, READONLY, ALIGN=2
 
@@ -537,504 +605,697 @@
                           REQUIRE _printf_x
                           REQUIRE _printf_longlong_hex
                   SpiFlash_Init PROC
-;;;504    
-;;;505    void SpiFlash_Init(void)
+;;;748    
+;;;749    void SpiFlash_Init(void)
 000000  b538              PUSH     {r3-r5,lr}
-;;;506    {
-;;;507        uint16_t u16ID = 0;
-;;;508        uint16_t i = 0;
-;;;509    	
-;;;510        /* Configure SPI_FLASH_PORT as a master, MSB first, 8-bit transaction, SPI Mode-0 timing, clock is 20MHz */
-;;;511        SPI_Open(SPI_FLASH_PORT, SPI_MASTER, SPI_MODE_0, 8, SPI_CLK_FREQ);
-000002  4812              LDR      r0,|L7.76|
-000004  4d12              LDR      r5,|L7.80|
-000006  2400              MOVS     r4,#0                 ;508
-000008  9000              STR      r0,[sp,#0]
-00000a  2308              MOVS     r3,#8
-00000c  2204              MOVS     r2,#4
-00000e  4621              MOV      r1,r4
-000010  4628              MOV      r0,r5
-000012  f7fffffe          BL       SPI_Open
-;;;512    
-;;;513        /* Disable auto SS function, control SS signal manually. */
-;;;514        SPI_DisableAutoSS(SPI_FLASH_PORT);
-000016  4628              MOV      r0,r5
-000018  f7fffffe          BL       SPI_DisableAutoSS
-;;;515        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
-00001c  68a9              LDR      r1,[r5,#8]
-00001e  f0210008          BIC      r0,r1,#8
-000022  f0400105          ORR      r1,r0,#5
-000026  60a9              STR      r1,[r5,#8]
-;;;516    
-;;;517    	u16ID = SpiFlash_ReadMidDid();
-000028  f7fffffe          BL       SpiFlash_ReadMidDid
-00002c  4601              MOV      r1,r0
-;;;518    	printf("ID : 0x%2X\r\n" , u16ID);
-00002e  a009              ADR      r0,|L7.84|
-000030  f7fffffe          BL       __2printf
-;;;519    
-;;;520    	
-;;;521    	//initial TX , RX data
-;;;522        for (i=0; i < SPI_FLASH_PAGE_BYTE; i++)
-;;;523        {
-;;;524            TxBuffer[i] = 0xFF;
-000034  490b              LDR      r1,|L7.100|
-000036  20ff              MOVS     r0,#0xff
-;;;525            RxBuffer[i] = 0xFF;
-000038  f5017280          ADD      r2,r1,#0x100
-                  |L7.60|
-00003c  5508              STRB     r0,[r1,r4]            ;524
-00003e  5510              STRB     r0,[r2,r4]
-000040  1c64              ADDS     r4,r4,#1
-000042  b2a4              UXTH     r4,r4                 ;522
-000044  2cff              CMP      r4,#0xff              ;522
-000046  d9f9              BLS      |L7.60|
-;;;526        }
-;;;527    
-;;;528    }
-000048  bd38              POP      {r3-r5,pc}
-;;;529    
+;;;750    {
+;;;751        uint16_t u16ID = 0;
+;;;752        uint16_t i = 0;
+000002  2400              MOVS     r4,#0
+;;;753    
+;;;754    
+;;;755    	#if defined (M487_EVM_SPI_FLASH)	//PC4 , PC5 pull high
+;;;756    	GPIO_SetMode(PC, (BIT4 | BIT5) ,GPIO_MODE_OUTPUT);
+000004  2201              MOVS     r2,#1
+000006  2130              MOVS     r1,#0x30
+000008  4817              LDR      r0,|L7.104|
+00000a  f7fffffe          BL       GPIO_SetMode
+;;;757    	PC4 = 1;
+00000e  4917              LDR      r1,|L7.108|
+000010  2001              MOVS     r0,#1
+000012  6008              STR      r0,[r1,#0]
+;;;758    	PC5 = 1;	
+000014  1d09              ADDS     r1,r1,#4
+000016  6008              STR      r0,[r1,#0]
+;;;759    	TIMER_Delay(TIMER0, 1000);	
+000018  f44f717a          MOV      r1,#0x3e8
+00001c  4814              LDR      r0,|L7.112|
+00001e  f7fffffe          BL       TIMER_Delay
+;;;760    	#endif
+;;;761    
+;;;762    	#if defined (M487_EVM_SPI_FLASH)
+;;;763        /* Configure SPI_FLASH_PORT as a master, MSB first, 8-bit transaction, SPI Mode-0 timing, clock is 20MHz */
+;;;764        QSPI_Open(SPI_FLASH_PORT, SPI_MASTER, SPI_MODE_0, 8, SPI_CLK_FREQ);
+000022  4814              LDR      r0,|L7.116|
+000024  4d14              LDR      r5,|L7.120|
+000026  9000              STR      r0,[sp,#0]
+000028  2308              MOVS     r3,#8
+00002a  2204              MOVS     r2,#4
+00002c  2100              MOVS     r1,#0
+00002e  4628              MOV      r0,r5
+000030  f7fffffe          BL       QSPI_Open
+;;;765    
+;;;766        /* Disable auto SS function, control SS signal manually. */
+;;;767        QSPI_DisableAutoSS(SPI_FLASH_PORT);
+000034  4628              MOV      r0,r5
+000036  f7fffffe          BL       QSPI_DisableAutoSS
+;;;768        QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+00003a  68a9              LDR      r1,[r5,#8]
+00003c  f0210008          BIC      r0,r1,#8
+000040  f0400105          ORR      r1,r0,#5
+000044  60a9              STR      r1,[r5,#8]
+;;;769    
+;;;770    	#else
+;;;771        /* Configure SPI_FLASH_PORT as a master, MSB first, 8-bit transaction, SPI Mode-0 timing, clock is 20MHz */
+;;;772        SPI_Open(SPI_FLASH_PORT, SPI_MASTER, SPI_MODE_0, 8, SPI_CLK_FREQ);
+;;;773    
+;;;774        /* Disable auto SS function, control SS signal manually. */
+;;;775        SPI_DisableAutoSS(SPI_FLASH_PORT);
+;;;776        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;777    	#endif
+;;;778    
+;;;779    	/*
+;;;780    		W25Q32JV : 0xEF15
+;;;781    	*/
+;;;782    	u16ID = SpiFlash_ReadMidDid();
+000046  f7fffffe          BL       SpiFlash_ReadMidDid
+00004a  4601              MOV      r1,r0
+;;;783    	printf("ID : 0x%2X\r\n" , u16ID);
+00004c  a00b              ADR      r0,|L7.124|
+00004e  f7fffffe          BL       __2printf
+;;;784    
+;;;785    	
+;;;786    	//initial TX , RX data
+;;;787        for (i=0; i < SPI_FLASH_PAGE_BYTE; i++)
+;;;788        {
+;;;789            TxBuffer[i] = 0xFF;
+000052  490e              LDR      r1,|L7.140|
+000054  20ff              MOVS     r0,#0xff
+;;;790            RxBuffer[i] = 0xFF;
+000056  f5017280          ADD      r2,r1,#0x100
+                  |L7.90|
+00005a  5508              STRB     r0,[r1,r4]            ;789
+00005c  5510              STRB     r0,[r2,r4]
+00005e  1c64              ADDS     r4,r4,#1
+000060  b2a4              UXTH     r4,r4                 ;787
+000062  2cff              CMP      r4,#0xff              ;787
+000064  d9f9              BLS      |L7.90|
+;;;791        }
+;;;792    
+;;;793    }
+000066  bd38              POP      {r3-r5,pc}
+;;;794    
                           ENDP
 
-00004a  0000              DCW      0x0000
-                  |L7.76|
-                          DCD      0x000f4240
-                  |L7.80|
-                          DCD      0x40061000
-                  |L7.84|
-000054  4944203a          DCB      "ID : 0x%2X\r\n",0
-000058  20307825
-00005c  32580d0a
-000060  00      
-000061  00                DCB      0
-000062  00                DCB      0
-000063  00                DCB      0
-                  |L7.100|
+                  |L7.104|
+                          DCD      0x40004080
+                  |L7.108|
+                          DCD      0x40004890
+                  |L7.112|
+                          DCD      0x40050000
+                  |L7.116|
+                          DCD      0x02dc6c00
+                  |L7.120|
+                          DCD      0x40060000
+                  |L7.124|
+00007c  4944203a          DCB      "ID : 0x%2X\r\n",0
+000080  20307825
+000084  32580d0a
+000088  00      
+000089  00                DCB      0
+00008a  00                DCB      0
+00008b  00                DCB      0
+                  |L7.140|
                           DCD      ||.bss||
 
                           AREA ||i.SpiFlash_NormalPageProgram||, CODE, READONLY, ALIGN=2
 
                   SpiFlash_NormalPageProgram PROC
-;;;380    
-;;;381    void SpiFlash_NormalPageProgram(uint32_t StartAddress, uint8_t *u8DataBuffer , uint8_t EnablePDMA)
+;;;524    
+;;;525    void SpiFlash_NormalPageProgram(uint32_t StartAddress, uint8_t *u8DataBuffer , uint8_t EnablePDMA)
 000000  b570              PUSH     {r4-r6,lr}
-;;;382    {
-;;;383        uint32_t i = 0;
-;;;384    	
-;;;385        // /CS: active
-;;;386        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;526    {
+;;;527        uint32_t i = 0;
+;;;528    
+;;;529    	#if defined (M487_EVM_SPI_FLASH)
+;;;530    
+;;;531       // /CS: active
+;;;532        QSPI_SET_SS_LOW(SPI_FLASH_PORT);
 000002  4c21              LDR      r4,|L8.136|
-000004  460b              MOV      r3,r1                 ;382
-000006  4605              MOV      r5,r0                 ;382
+000004  460b              MOV      r3,r1                 ;526
+000006  4605              MOV      r5,r0                 ;526
 000008  68a1              LDR      r1,[r4,#8]
-00000a  2000              MOVS     r0,#0                 ;383
+00000a  2000              MOVS     r0,#0                 ;527
 00000c  f021010c          BIC      r1,r1,#0xc
 000010  f0410101          ORR      r1,r1,#1
 000014  60a1              STR      r1,[r4,#8]
-;;;387    
-;;;388        // send Command: 0x06, Write enable
-;;;389        SPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
+;;;533    
+;;;534        // send Command: 0x06, Write enable
+;;;535        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
 000016  2106              MOVS     r1,#6
 000018  6221              STR      r1,[r4,#0x20]
                   |L8.26|
-;;;390    
-;;;391        // wait tx finish
-;;;392        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;536    
+;;;537        // wait tx finish
+;;;538        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
 00001a  6961              LDR      r1,[r4,#0x14]
 00001c  07c9              LSLS     r1,r1,#31
 00001e  d1fc              BNE      |L8.26|
-;;;393    
-;;;394        // /CS: de-active
-;;;395        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;539    
+;;;540        // /CS: de-active
+;;;541        QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
 000020  68a1              LDR      r1,[r4,#8]
 000022  f0210108          BIC      r1,r1,#8
 000026  f0410105          ORR      r1,r1,#5
 00002a  60a1              STR      r1,[r4,#8]
-;;;396    
-;;;397    
-;;;398        // /CS: active
-;;;399        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;542    
+;;;543    
+;;;544        // /CS: active
+;;;545        QSPI_SET_SS_LOW(SPI_FLASH_PORT);
 00002c  68a1              LDR      r1,[r4,#8]
 00002e  f021010c          BIC      r1,r1,#0xc
 000032  f0410101          ORR      r1,r1,#1
 000036  60a1              STR      r1,[r4,#8]
-;;;400    
-;;;401        // send Command: 0x02, Page program
-;;;402        SPI_WRITE_TX(SPI_FLASH_PORT, 0x02);
+;;;546    
+;;;547        // send Command: 0x02, Page program
+;;;548        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x02);
 000038  2102              MOVS     r1,#2
 00003a  6221              STR      r1,[r4,#0x20]
-;;;403    
-;;;404        // send 24-bit start address
-;;;405        SPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>16) & 0xFF);
+;;;549    
+;;;550        // send 24-bit start address
+;;;551        QSPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>16) & 0xFF);
 00003c  f3c54107          UBFX     r1,r5,#16,#8
 000040  6221              STR      r1,[r4,#0x20]
-;;;406        SPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>8)  & 0xFF);
+;;;552        QSPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>8)  & 0xFF);
 000042  f3c52107          UBFX     r1,r5,#8,#8
 000046  6221              STR      r1,[r4,#0x20]
-;;;407        SPI_WRITE_TX(SPI_FLASH_PORT, StartAddress       & 0xFF);
+;;;553        QSPI_WRITE_TX(SPI_FLASH_PORT, StartAddress       & 0xFF);
 000048  b2e9              UXTB     r1,r5
 00004a  6221              STR      r1,[r4,#0x20]
-;;;408    
-;;;409    
-;;;410        // write data
-;;;411    	if (EnablePDMA)
+;;;554    
+;;;555    
+;;;556        // write data
+;;;557    	if (EnablePDMA)
 00004c  b12a              CBZ      r2,|L8.90|
-;;;412    	{
-;;;413    		SPI_Master_TX_PDMA(u8DataBuffer , SPI_FLASH_PAGE_BYTE);
+;;;558    	{
+;;;559    		SPI_Master_TX_PDMA(u8DataBuffer , SPI_FLASH_PAGE_BYTE);
 00004e  f44f7180          MOV      r1,#0x100
 000052  4618              MOV      r0,r3
 000054  f7fffffe          BL       SPI_Master_TX_PDMA
 000058  e008              B        |L8.108|
                   |L8.90|
-;;;414    	}
-;;;415    	else
-;;;416    	{
-;;;417    	    while(1)
-;;;418    	    {
-;;;419    	        if(!SPI_GET_TX_FIFO_FULL_FLAG(SPI_FLASH_PORT))
+;;;560    	}
+;;;561    	else
+;;;562    	{
+;;;563    	    while(1)
+;;;564    	    {
+;;;565    	        if(!QSPI_GET_TX_FIFO_FULL_FLAG(SPI_FLASH_PORT))
 00005a  6961              LDR      r1,[r4,#0x14]
 00005c  0389              LSLS     r1,r1,#14
 00005e  d4fc              BMI      |L8.90|
-;;;420    	        {
-;;;421    //				printf("%3d\r\n" , i);			
-;;;422    	            SPI_WRITE_TX(SPI_FLASH_PORT, u8DataBuffer[i]);
+;;;566    	        {
+;;;567    //				printf("%3d\r\n" , i);			
+;;;568    	            QSPI_WRITE_TX(SPI_FLASH_PORT, u8DataBuffer[i]);
 000060  5c19              LDRB     r1,[r3,r0]
 000062  6221              STR      r1,[r4,#0x20]
-;;;423    	            if (i++ >= (SPI_FLASH_PAGE_BYTE-1) )
+;;;569    	            if (i++ >= (SPI_FLASH_PAGE_BYTE-1) )
 000064  4601              MOV      r1,r0
 000066  1c40              ADDS     r0,r0,#1
 000068  29ff              CMP      r1,#0xff
 00006a  d3f6              BCC      |L8.90|
                   |L8.108|
-;;;424    					break;				
-;;;425    	        }
-;;;426    	    }
-;;;427    	}
-;;;428    
-;;;429        // wait tx finish
-;;;430        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;570    					break;				
+;;;571    	        }
+;;;572    	    }
+;;;573    	}
+;;;574    
+;;;575        // wait tx finish
+;;;576        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
 00006c  6961              LDR      r1,[r4,#0x14]
 00006e  07c9              LSLS     r1,r1,#31
 000070  d1fc              BNE      |L8.108|
-;;;431    
-;;;432        // /CS: de-active
-;;;433        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;577    
+;;;578        // /CS: de-active
+;;;579        QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
 000072  68a1              LDR      r1,[r4,#8]
 000074  4620              MOV      r0,r4
 000076  f0210108          BIC      r1,r1,#8
 00007a  f0410105          ORR      r1,r1,#5
 00007e  60a1              STR      r1,[r4,#8]
-;;;434    
-;;;435        SPI_ClearRxFIFO(SPI_FLASH_PORT);
+;;;580    
+;;;581        QSPI_ClearRxFIFO(SPI_FLASH_PORT);
 000080  e8bd4070          POP      {r4-r6,lr}
-000084  f7ffbffe          B.W      SPI_ClearRxFIFO
-;;;436    }
-;;;437    
+000084  f7ffbffe          B.W      QSPI_ClearRxFIFO
+;;;582    
+;;;583    
+;;;584    	#else
+;;;585    	
+;;;586        // /CS: active
+;;;587        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;588    
+;;;589        // send Command: 0x06, Write enable
+;;;590        SPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
+;;;591    
+;;;592        // wait tx finish
+;;;593        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;594    
+;;;595        // /CS: de-active
+;;;596        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;597    
+;;;598    
+;;;599        // /CS: active
+;;;600        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;601    
+;;;602        // send Command: 0x02, Page program
+;;;603        SPI_WRITE_TX(SPI_FLASH_PORT, 0x02);
+;;;604    
+;;;605        // send 24-bit start address
+;;;606        SPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>16) & 0xFF);
+;;;607        SPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>8)  & 0xFF);
+;;;608        SPI_WRITE_TX(SPI_FLASH_PORT, StartAddress       & 0xFF);
+;;;609    
+;;;610    
+;;;611        // write data
+;;;612    	if (EnablePDMA)
+;;;613    	{
+;;;614    		SPI_Master_TX_PDMA(u8DataBuffer , SPI_FLASH_PAGE_BYTE);
+;;;615    	}
+;;;616    	else
+;;;617    	{
+;;;618    	    while(1)
+;;;619    	    {
+;;;620    	        if(!SPI_GET_TX_FIFO_FULL_FLAG(SPI_FLASH_PORT))
+;;;621    	        {
+;;;622    //				printf("%3d\r\n" , i);			
+;;;623    	            SPI_WRITE_TX(SPI_FLASH_PORT, u8DataBuffer[i]);
+;;;624    	            if (i++ >= (SPI_FLASH_PAGE_BYTE-1) )
+;;;625    					break;				
+;;;626    	        }
+;;;627    	    }
+;;;628    	}
+;;;629    
+;;;630        // wait tx finish
+;;;631        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;632    
+;;;633        // /CS: de-active
+;;;634        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;635    
+;;;636        SPI_ClearRxFIFO(SPI_FLASH_PORT);
+;;;637    	#endif
+;;;638    }
+;;;639    
                           ENDP
 
                   |L8.136|
-                          DCD      0x40061000
+                          DCD      0x40060000
 
                           AREA ||i.SpiFlash_NormalRead||, CODE, READONLY, ALIGN=2
 
                   SpiFlash_NormalRead PROC
-;;;443    
-;;;444    void SpiFlash_NormalRead(uint32_t StartAddress, uint8_t *u8DataBuffer , uint8_t EnablePDMA)
+;;;645    
+;;;646    void SpiFlash_NormalRead(uint32_t StartAddress, uint8_t *u8DataBuffer , uint8_t EnablePDMA)
 000000  b570              PUSH     {r4-r6,lr}
-;;;445    {
-;;;446        uint32_t i = 0;
-;;;447    
-;;;448        // /CS: active
-;;;449        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;647    {
+;;;648        uint32_t i = 0;
+;;;649    
+;;;650    	#if defined (M487_EVM_SPI_FLASH)
+;;;651       // /CS: active
+;;;652        QSPI_SET_SS_LOW(SPI_FLASH_PORT);
 000002  4c1a              LDR      r4,|L9.108|
-000004  460d              MOV      r5,r1                 ;445
-000006  4616              MOV      r6,r2                 ;445
+000004  460d              MOV      r5,r1                 ;647
+000006  4616              MOV      r6,r2                 ;647
 000008  68a1              LDR      r1,[r4,#8]
 00000a  f021010c          BIC      r1,r1,#0xc
 00000e  f0410101          ORR      r1,r1,#1
 000012  60a1              STR      r1,[r4,#8]
-;;;450    
-;;;451        // send Command: 0x03, Read data
-;;;452        SPI_WRITE_TX(SPI_FLASH_PORT, 0x03);
+;;;653    
+;;;654        // send Command: 0x03, Read data
+;;;655        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x03);
 000014  2103              MOVS     r1,#3
 000016  6221              STR      r1,[r4,#0x20]
-;;;453    
-;;;454        // send 24-bit start address
-;;;455        SPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>16) & 0xFF);
+;;;656    
+;;;657        // send 24-bit start address
+;;;658        QSPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>16) & 0xFF);
 000018  f3c04107          UBFX     r1,r0,#16,#8
 00001c  6221              STR      r1,[r4,#0x20]
-;;;456        SPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>8)  & 0xFF);
+;;;659        QSPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>8)  & 0xFF);
 00001e  f3c02107          UBFX     r1,r0,#8,#8
 000022  6221              STR      r1,[r4,#0x20]
-;;;457        SPI_WRITE_TX(SPI_FLASH_PORT, StartAddress       & 0xFF);
+;;;660        QSPI_WRITE_TX(SPI_FLASH_PORT, StartAddress       & 0xFF);
 000024  b2c0              UXTB     r0,r0
 000026  6220              STR      r0,[r4,#0x20]
                   |L9.40|
-;;;458    
-;;;459        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;661    
+;;;662        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
 000028  6960              LDR      r0,[r4,#0x14]
 00002a  07c0              LSLS     r0,r0,#31
 00002c  d1fc              BNE      |L9.40|
-;;;460        // clear RX buffer
-;;;461        SPI_ClearRxFIFO(SPI_FLASH_PORT);
+;;;663        // clear RX buffer
+;;;664        QSPI_ClearRxFIFO(SPI_FLASH_PORT);
 00002e  4620              MOV      r0,r4
-000030  f7fffffe          BL       SPI_ClearRxFIFO
-;;;462    
-;;;463        // read data
-;;;464        if (EnablePDMA)
+000030  f7fffffe          BL       QSPI_ClearRxFIFO
+;;;665    
+;;;666        // read data
+;;;667        if (EnablePDMA)
 000034  b12e              CBZ      r6,|L9.66|
-;;;465        {
-;;;466    		SPI_Master_RX_PDMA(u8DataBuffer , SPI_FLASH_PAGE_BYTE);
+;;;668        {
+;;;669    		SPI_Master_RX_PDMA(u8DataBuffer , SPI_FLASH_PAGE_BYTE);
 000036  f44f7180          MOV      r1,#0x100
 00003a  4628              MOV      r0,r5
 00003c  f7fffffe          BL       SPI_Master_RX_PDMA
 000040  e00a              B        |L9.88|
                   |L9.66|
-;;;467        }
-;;;468    	else
-;;;469    	{
-;;;470    	    for(i = 0 ; i < SPI_FLASH_PAGE_BYTE ; i++)
+;;;670        }
+;;;671    	else
+;;;672    	{
+;;;673    	    for(i = 0 ; i < SPI_FLASH_PAGE_BYTE ; i++)
 000042  2000              MOVS     r0,#0
 000044  4603              MOV      r3,r0
                   |L9.70|
-;;;471    	    {
-;;;472    	        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;674    	    {
+;;;675    	        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
 000046  6223              STR      r3,[r4,#0x20]
                   |L9.72|
-;;;473    	        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;676    	        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
 000048  6962              LDR      r2,[r4,#0x14]
 00004a  07d1              LSLS     r1,r2,#31
 00004c  d1fc              BNE      |L9.72|
-;;;474    	        u8DataBuffer[i] = SPI_READ_RX(SPI_FLASH_PORT);
+;;;677    	        u8DataBuffer[i] = QSPI_READ_RX(SPI_FLASH_PORT);
 00004e  6b21              LDR      r1,[r4,#0x30]
 000050  5429              STRB     r1,[r5,r0]
 000052  1c40              ADDS     r0,r0,#1
-000054  28ff              CMP      r0,#0xff              ;470
+000054  28ff              CMP      r0,#0xff              ;673
 000056  d9f6              BLS      |L9.70|
                   |L9.88|
-;;;475    	    }
-;;;476    	}
-;;;477    
-;;;478        // wait tx finish
-;;;479        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;678    	    }
+;;;679    	}
+;;;680    
+;;;681        // wait tx finish
+;;;682        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
 000058  6960              LDR      r0,[r4,#0x14]
 00005a  07c0              LSLS     r0,r0,#31
 00005c  d1fc              BNE      |L9.88|
-;;;480    
-;;;481        // /CS: de-active
-;;;482        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;683    
+;;;684        // /CS: de-active
+;;;685        QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
 00005e  68a0              LDR      r0,[r4,#8]
 000060  f0200008          BIC      r0,r0,#8
 000064  f0400005          ORR      r0,r0,#5
 000068  60a0              STR      r0,[r4,#8]
-;;;483    }
+;;;686    
+;;;687    	#else
+;;;688    
+;;;689        // /CS: active
+;;;690        QSPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;691    
+;;;692        // send Command: 0x03, Read data
+;;;693        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x03);
+;;;694    
+;;;695        // send 24-bit start address
+;;;696        QSPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>16) & 0xFF);
+;;;697        QSPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>8)  & 0xFF);
+;;;698        QSPI_WRITE_TX(SPI_FLASH_PORT, StartAddress       & 0xFF);
+;;;699    
+;;;700        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+;;;701        // clear RX buffer
+;;;702        QSPI_ClearRxFIFO(SPI_FLASH_PORT);
+;;;703    
+;;;704        // read data
+;;;705        if (EnablePDMA)
+;;;706        {
+;;;707    		SPI_Master_RX_PDMA(u8DataBuffer , SPI_FLASH_PAGE_BYTE);
+;;;708        }
+;;;709    	else
+;;;710    	{
+;;;711    	    for(i = 0 ; i < SPI_FLASH_PAGE_BYTE ; i++)
+;;;712    	    {
+;;;713    	        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;714    	        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+;;;715    	        u8DataBuffer[i] = QSPI_READ_RX(SPI_FLASH_PORT);
+;;;716    	    }
+;;;717    	}
+;;;718    
+;;;719        // wait tx finish
+;;;720        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+;;;721    
+;;;722        // /CS: de-active
+;;;723        QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;724    	#endif
+;;;725    
+;;;726    	
+;;;727    }
 00006a  bd70              POP      {r4-r6,pc}
-;;;484    
+;;;728    
                           ENDP
 
                   |L9.108|
-                          DCD      0x40061000
+                          DCD      0x40060000
 
                           AREA ||i.SpiFlash_PageRead||, CODE, READONLY, ALIGN=1
 
                   SpiFlash_PageRead PROC
-;;;484    
-;;;485    void SpiFlash_PageRead(uint32_t page_no, uint8_t *u8DataBuffer , uint8_t EnablePDMA)
+;;;728    
+;;;729    void SpiFlash_PageRead(uint32_t page_no, uint8_t *u8DataBuffer , uint8_t EnablePDMA)
 000000  0200              LSLS     r0,r0,#8
-;;;486    {
-;;;487    	SpiFlash_NormalRead(page_no*SPI_FLASH_PAGE_BYTE , u8DataBuffer , EnablePDMA);
+;;;730    {
+;;;731    	SpiFlash_NormalRead(page_no*SPI_FLASH_PAGE_BYTE , u8DataBuffer , EnablePDMA);
 000002  f7ffbffe          B.W      SpiFlash_NormalRead
-;;;488    }
-;;;489    
+;;;732    }
+;;;733    
                           ENDP
 
 
                           AREA ||i.SpiFlash_PageWrite||, CODE, READONLY, ALIGN=1
 
                   SpiFlash_PageWrite PROC
-;;;437    
-;;;438    void SpiFlash_PageWrite(uint32_t page_no, uint8_t *u8DataBuffer , uint8_t EnablePDMA)
+;;;639    
+;;;640    void SpiFlash_PageWrite(uint32_t page_no, uint8_t *u8DataBuffer , uint8_t EnablePDMA)
 000000  b510              PUSH     {r4,lr}
-;;;439    {
-;;;440    	SpiFlash_NormalPageProgram(page_no*SPI_FLASH_PAGE_BYTE , u8DataBuffer , EnablePDMA);
+;;;641    {
+;;;642    	SpiFlash_NormalPageProgram(page_no*SPI_FLASH_PAGE_BYTE , u8DataBuffer , EnablePDMA);
 000002  0200              LSLS     r0,r0,#8
 000004  f7fffffe          BL       SpiFlash_NormalPageProgram
-;;;441    	SpiFlash_WaitReady();
+;;;643    	SpiFlash_WaitReady();
 000008  e8bd4010          POP      {r4,lr}
 00000c  f7ffbffe          B.W      SpiFlash_WaitReady
-;;;442    }
-;;;443    
+;;;644    }
+;;;645    
                           ENDP
 
 
                           AREA ||i.SpiFlash_ReadMidDid||, CODE, READONLY, ALIGN=2
 
                   SpiFlash_ReadMidDid PROC
-;;;240    
-;;;241    uint16_t SpiFlash_ReadMidDid(void)
+;;;264    
+;;;265    uint16_t SpiFlash_ReadMidDid(void)
 000000  b50c              PUSH     {r2,r3,lr}
-;;;242    {
-;;;243        uint8_t u8RxData[6], u8IDCnt = 0;
-;;;244    
-;;;245        // /CS: active
-;;;246        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;266    {
+;;;267        uint8_t u8RxData[6], u8IDCnt = 0;
+;;;268    
+;;;269    	#if defined (M487_EVM_SPI_FLASH)
+;;;270        // /CS: active
+;;;271        QSPI_SET_SS_LOW(SPI_FLASH_PORT);
 000002  4912              LDR      r1,|L12.76|
-000004  2000              MOVS     r0,#0                 ;243
+000004  2000              MOVS     r0,#0                 ;267
 000006  688a              LDR      r2,[r1,#8]
 000008  f022020c          BIC      r2,r2,#0xc
 00000c  f0420201          ORR      r2,r2,#1
 000010  608a              STR      r2,[r1,#8]
-;;;247    
-;;;248        // send Command: 0x90, Read Manufacturer/Device ID
-;;;249        SPI_WRITE_TX(SPI_FLASH_PORT, 0x90);
+;;;272    
+;;;273        // send Command: 0x90, Read Manufacturer/Device ID
+;;;274        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x90);
 000012  2290              MOVS     r2,#0x90
 000014  620a              STR      r2,[r1,#0x20]
-;;;250    
-;;;251        // send 24-bit '0', dummy
-;;;252        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;275    
+;;;276        // send 24-bit '0', dummy
+;;;277        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
 000016  6208              STR      r0,[r1,#0x20]
-;;;253        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;278        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
 000018  6208              STR      r0,[r1,#0x20]
-;;;254        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;279        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
 00001a  6208              STR      r0,[r1,#0x20]
-;;;255    
-;;;256        // receive 16-bit
-;;;257        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;280    
+;;;281        // receive 16-bit
+;;;282        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
 00001c  6208              STR      r0,[r1,#0x20]
-;;;258        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;283        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
 00001e  6208              STR      r0,[r1,#0x20]
                   |L12.32|
-;;;259    
-;;;260        // wait tx finish
-;;;261        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;284    
+;;;285        // wait tx finish
+;;;286        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
 000020  694a              LDR      r2,[r1,#0x14]
 000022  07d2              LSLS     r2,r2,#31
 000024  d1fc              BNE      |L12.32|
-;;;262    
-;;;263        // /CS: de-active
-;;;264        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;287    
+;;;288        // /CS: de-active
+;;;289        QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
 000026  688a              LDR      r2,[r1,#8]
 000028  f0220208          BIC      r2,r2,#8
 00002c  f0420205          ORR      r2,r2,#5
 000030  608a              STR      r2,[r1,#8]
-000032  466b              MOV      r3,sp                 ;243
-;;;265    
-;;;266        while(!SPI_GET_RX_FIFO_EMPTY_FLAG(SPI_FLASH_PORT))
+000032  466b              MOV      r3,sp                 ;267
+;;;290    
+;;;291        while(!QSPI_GET_RX_FIFO_EMPTY_FLAG(SPI_FLASH_PORT))
 000034  e003              B        |L12.62|
                   |L12.54|
-;;;267            u8RxData[u8IDCnt ++] = SPI_READ_RX(SPI_FLASH_PORT);
+;;;292            u8RxData[u8IDCnt ++] = QSPI_READ_RX(SPI_FLASH_PORT);
 000036  6b0a              LDR      r2,[r1,#0x30]
 000038  541a              STRB     r2,[r3,r0]
 00003a  1c40              ADDS     r0,r0,#1
 00003c  b2c0              UXTB     r0,r0
                   |L12.62|
-00003e  694a              LDR      r2,[r1,#0x14]         ;266
-000040  05d2              LSLS     r2,r2,#23             ;266
+00003e  694a              LDR      r2,[r1,#0x14]         ;291
+000040  05d2              LSLS     r2,r2,#23             ;291
 000042  d5f8              BPL      |L12.54|
-;;;268    
-;;;269        return ( (u8RxData[4]<<8) | u8RxData[5] );
+;;;293    
+;;;294    	#else
+;;;295    	
+;;;296        // /CS: active
+;;;297        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;298    
+;;;299        // send Command: 0x90, Read Manufacturer/Device ID
+;;;300        SPI_WRITE_TX(SPI_FLASH_PORT, 0x90);
+;;;301    
+;;;302        // send 24-bit '0', dummy
+;;;303        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;304        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;305        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;306    
+;;;307        // receive 16-bit
+;;;308        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;309        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;310    
+;;;311        // wait tx finish
+;;;312        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;313    
+;;;314        // /CS: de-active
+;;;315        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;316    
+;;;317        while(!SPI_GET_RX_FIFO_EMPTY_FLAG(SPI_FLASH_PORT))
+;;;318            u8RxData[u8IDCnt ++] = SPI_READ_RX(SPI_FLASH_PORT);
+;;;319    
+;;;320    	#endif
+;;;321    
+;;;322        return ( (u8RxData[4]<<8) | u8RxData[5] );
 000044  f8bd0004          LDRH     r0,[sp,#4]
 000048  ba40              REV16    r0,r0
-;;;270    }
+;;;323    }
 00004a  bd0c              POP      {r2,r3,pc}
-;;;271    
+;;;324    
                           ENDP
 
                   |L12.76|
-                          DCD      0x40061000
+                          DCD      0x40060000
 
                           AREA ||i.SpiFlash_ReadStatusReg||, CODE, READONLY, ALIGN=2
 
                   SpiFlash_ReadStatusReg PROC
-;;;302    
-;;;303    uint8_t SpiFlash_ReadStatusReg(void)
+;;;387    
+;;;388    uint8_t SpiFlash_ReadStatusReg(void)
 000000  480b              LDR      r0,|L13.48|
-;;;304    {
-;;;305        // /CS: active
-;;;306        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;389    {
+;;;390    	#if defined (M487_EVM_SPI_FLASH)
+;;;391    
+;;;392        // /CS: active
+;;;393        QSPI_SET_SS_LOW(SPI_FLASH_PORT);
 000002  6881              LDR      r1,[r0,#8]
 000004  f021010c          BIC      r1,r1,#0xc
 000008  f0410101          ORR      r1,r1,#1
 00000c  6081              STR      r1,[r0,#8]
-;;;307    
-;;;308        // send Command: 0x05, Read status register
-;;;309        SPI_WRITE_TX(SPI_FLASH_PORT, 0x05);
+;;;394    
+;;;395        // send Command: 0x05, Read status register
+;;;396        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x05);
 00000e  2105              MOVS     r1,#5
 000010  6201              STR      r1,[r0,#0x20]
-;;;310    
-;;;311        // read status
-;;;312        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;397    
+;;;398        // read status
+;;;399        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
 000012  2100              MOVS     r1,#0
 000014  6201              STR      r1,[r0,#0x20]
                   |L13.22|
-;;;313    
-;;;314        // wait tx finish
-;;;315        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;400    
+;;;401        // wait tx finish
+;;;402        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
 000016  6941              LDR      r1,[r0,#0x14]
 000018  07c9              LSLS     r1,r1,#31
 00001a  d1fc              BNE      |L13.22|
-;;;316    
-;;;317        // /CS: de-active
-;;;318        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;403    
+;;;404        // /CS: de-active
+;;;405        QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
 00001c  6881              LDR      r1,[r0,#8]
 00001e  f0210108          BIC      r1,r1,#8
 000022  f0410105          ORR      r1,r1,#5
 000026  6081              STR      r1,[r0,#8]
-;;;319    
-;;;320        // skip first rx data
-;;;321        SPI_READ_RX(SPI_FLASH_PORT);
+;;;406    
+;;;407        // skip first rx data
+;;;408        QSPI_READ_RX(SPI_FLASH_PORT);
 000028  6b01              LDR      r1,[r0,#0x30]
-;;;322    
-;;;323        return (SPI_READ_RX(SPI_FLASH_PORT) & 0xff);
+;;;409    
+;;;410        return (QSPI_READ_RX(SPI_FLASH_PORT) & 0xff);
 00002a  6b00              LDR      r0,[r0,#0x30]
 00002c  b2c0              UXTB     r0,r0
-;;;324    }
+;;;411    
+;;;412    	
+;;;413    	#else
+;;;414        // /CS: active
+;;;415        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;416    
+;;;417        // send Command: 0x05, Read status register
+;;;418        SPI_WRITE_TX(SPI_FLASH_PORT, 0x05);
+;;;419    
+;;;420        // read status
+;;;421        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+;;;422    
+;;;423        // wait tx finish
+;;;424        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;425    
+;;;426        // /CS: de-active
+;;;427        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;428    
+;;;429        // skip first rx data
+;;;430        SPI_READ_RX(SPI_FLASH_PORT);
+;;;431    
+;;;432        return (SPI_READ_RX(SPI_FLASH_PORT) & 0xff);
+;;;433    
+;;;434    	#endif
+;;;435    }
 00002e  4770              BX       lr
-;;;325    
+;;;436    
                           ENDP
 
                   |L13.48|
-                          DCD      0x40061000
+                          DCD      0x40060000
 
                           AREA ||i.SpiFlash_WaitReady||, CODE, READONLY, ALIGN=2
 
                   SpiFlash_WaitReady PROC
-;;;357    
-;;;358    void SpiFlash_WaitReady(void)
+;;;501    
+;;;502    void SpiFlash_WaitReady(void)
 000000  b510              PUSH     {r4,lr}
-;;;359    {
-;;;360        uint8_t ReturnValue = 0;
-;;;361    //    uint32_t cnt = 0;
-;;;362    	
-;;;363        do
-;;;364        {
-;;;365            ReturnValue = SpiFlash_ReadStatusReg();
-;;;366            ReturnValue = ReturnValue & 1;
-;;;367    
-;;;368    		#if 1	//debug purpose
-;;;369    //		printf("BUSY counter : %4d\r\n" , cnt++);
-;;;370    //		printf(".");
-;;;371    		LED_Y ^= 1;
+;;;503    {
+;;;504        uint8_t ReturnValue = 0;
+;;;505    //    uint32_t cnt = 0;
+;;;506    	
+;;;507        do
+;;;508        {
+;;;509            ReturnValue = SpiFlash_ReadStatusReg();
+;;;510            ReturnValue = ReturnValue & 1;
+;;;511    
+;;;512    		#if 1	//debug purpose
+;;;513    //		printf("BUSY counter : %4d\r\n" , cnt++);
+;;;514    //		printf(".");
+;;;515    		LED_Y ^= 1;
 000002  4a07              LDR      r2,|L14.32|
                   |L14.4|
 000004  f7fffffe          BL       SpiFlash_ReadStatusReg
 000008  6811              LDR      r1,[r2,#0]
-00000a  f0100f01          TST      r0,#1                 ;366
+00000a  f0100f01          TST      r0,#1                 ;510
 00000e  f0810101          EOR      r1,r1,#1
 000012  6011              STR      r1,[r2,#0]
-;;;372    		
-;;;373    		#endif
-;;;374    
-;;;375        }
-;;;376        while(ReturnValue!=0);   // check the BUSY bit
+;;;516    		
+;;;517    		#endif
+;;;518    
+;;;519        }
+;;;520        while(ReturnValue!=0);   // check the BUSY bit
 000014  d1f6              BNE      |L14.4|
-;;;377    
-;;;378    	printf("\r\n");
+;;;521    
+;;;522    	printf("\r\n");
 000016  e8bd4010          POP      {r4,lr}
 00001a  a002              ADR      r0,|L14.36|
 00001c  f7ffbffe          B.W      __2printf
-;;;379    }
-;;;380    
+;;;523    }
+;;;524    
                           ENDP
 
                   |L14.32|
@@ -1046,95 +1307,128 @@
                           AREA ||i.SpiFlash_WriteStatusReg||, CODE, READONLY, ALIGN=2
 
                   SpiFlash_WriteStatusReg PROC
-;;;325    
-;;;326    void SpiFlash_WriteStatusReg(uint8_t u8Value)
+;;;436    
+;;;437    void SpiFlash_WriteStatusReg(uint8_t u8Value)
 000000  4912              LDR      r1,|L15.76|
-;;;327    {
-;;;328        // /CS: active
-;;;329        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;438    {
+;;;439    	#if defined (M487_EVM_SPI_FLASH)
+;;;440       // /CS: active
+;;;441        QSPI_SET_SS_LOW(SPI_FLASH_PORT);
 000002  688a              LDR      r2,[r1,#8]
 000004  f022020c          BIC      r2,r2,#0xc
 000008  f0420201          ORR      r2,r2,#1
 00000c  608a              STR      r2,[r1,#8]
-;;;330    
-;;;331        // send Command: 0x06, Write enable
-;;;332        SPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
+;;;442    
+;;;443        // send Command: 0x06, Write enable
+;;;444        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
 00000e  2206              MOVS     r2,#6
 000010  620a              STR      r2,[r1,#0x20]
                   |L15.18|
-;;;333    
-;;;334        // wait tx finish
-;;;335        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;445    
+;;;446        // wait tx finish
+;;;447        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
 000012  694a              LDR      r2,[r1,#0x14]
 000014  07d2              LSLS     r2,r2,#31
 000016  d1fc              BNE      |L15.18|
-;;;336    
-;;;337        // /CS: de-active
-;;;338        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;448    
+;;;449        // /CS: de-active
+;;;450        QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
 000018  688a              LDR      r2,[r1,#8]
 00001a  f0220208          BIC      r2,r2,#8
 00001e  f0420205          ORR      r2,r2,#5
 000022  608a              STR      r2,[r1,#8]
-;;;339    
-;;;340        ///////////////////////////////////////
-;;;341    
-;;;342        // /CS: active
-;;;343        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;451    
+;;;452        ///////////////////////////////////////
+;;;453    
+;;;454        // /CS: active
+;;;455        QSPI_SET_SS_LOW(SPI_FLASH_PORT);
 000024  688a              LDR      r2,[r1,#8]
 000026  f022020c          BIC      r2,r2,#0xc
 00002a  f0420201          ORR      r2,r2,#1
 00002e  608a              STR      r2,[r1,#8]
-;;;344    
-;;;345        // send Command: 0x01, Write status register
-;;;346        SPI_WRITE_TX(SPI_FLASH_PORT, 0x01);
+;;;456    
+;;;457        // send Command: 0x01, Write status register
+;;;458        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x01);
 000030  2201              MOVS     r2,#1
 000032  620a              STR      r2,[r1,#0x20]
-;;;347    
-;;;348        // write status
-;;;349        SPI_WRITE_TX(SPI_FLASH_PORT, u8Value);
+;;;459    
+;;;460        // write status
+;;;461        QSPI_WRITE_TX(SPI_FLASH_PORT, u8Value);
 000034  6208              STR      r0,[r1,#0x20]
                   |L15.54|
-;;;350    
-;;;351        // wait tx finish
-;;;352        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;462    
+;;;463        // wait tx finish
+;;;464        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
 000036  6948              LDR      r0,[r1,#0x14]
 000038  07c0              LSLS     r0,r0,#31
 00003a  d1fc              BNE      |L15.54|
-;;;353    
-;;;354        // /CS: de-active
-;;;355        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;465    
+;;;466        // /CS: de-active
+;;;467        QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
 00003c  6888              LDR      r0,[r1,#8]
 00003e  f0200008          BIC      r0,r0,#8
 000042  f0400005          ORR      r0,r0,#5
 000046  6088              STR      r0,[r1,#8]
-;;;356    }
+;;;468    
+;;;469    	#else
+;;;470    
+;;;471        // /CS: active
+;;;472        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;473    
+;;;474        // send Command: 0x06, Write enable
+;;;475        SPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
+;;;476    
+;;;477        // wait tx finish
+;;;478        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;479    
+;;;480        // /CS: de-active
+;;;481        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;482    
+;;;483        ///////////////////////////////////////
+;;;484    
+;;;485        // /CS: active
+;;;486        SPI_SET_SS_LOW(SPI_FLASH_PORT);
+;;;487    
+;;;488        // send Command: 0x01, Write status register
+;;;489        SPI_WRITE_TX(SPI_FLASH_PORT, 0x01);
+;;;490    
+;;;491        // write status
+;;;492        SPI_WRITE_TX(SPI_FLASH_PORT, u8Value);
+;;;493    
+;;;494        // wait tx finish
+;;;495        while(SPI_IS_BUSY(SPI_FLASH_PORT));
+;;;496    
+;;;497        // /CS: de-active
+;;;498        SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+;;;499    	#endif
+;;;500    }
 000048  4770              BX       lr
-;;;357    
+;;;501    
                           ENDP
 
 00004a  0000              DCW      0x0000
                   |L15.76|
-                          DCD      0x40061000
+                          DCD      0x40060000
 
                           AREA ||i.TIMER0_HW_Init||, CODE, READONLY, ALIGN=2
 
                   TIMER0_HW_Init PROC
-;;;800    
-;;;801    void TIMER0_HW_Init(void)
+;;;1065   
+;;;1066   void TIMER0_HW_Init(void)
 000000  b510              PUSH     {r4,lr}
-;;;802    {
-;;;803    	CLK_EnableModuleClock(TMR0_MODULE);
+;;;1067   {
+;;;1068   	CLK_EnableModuleClock(TMR0_MODULE);
 000002  4c06              LDR      r4,|L16.28|
 000004  4620              MOV      r0,r4
 000006  f7fffffe          BL       CLK_EnableModuleClock
-;;;804    	CLK_SetModuleClock(TMR0_MODULE, CLK_CLKSEL1_TMR0SEL_PCLK0, 0);
+;;;1069   	CLK_SetModuleClock(TMR0_MODULE, CLK_CLKSEL1_TMR0SEL_PCLK0, 0);
 00000a  4620              MOV      r0,r4
 00000c  e8bd4010          POP      {r4,lr}
 000010  2200              MOVS     r2,#0
 000012  f44f7100          MOV      r1,#0x200
 000016  f7ffbffe          B.W      CLK_SetModuleClock
-;;;805    }
-;;;806    
+;;;1070   }
+;;;1071   
                           ENDP
 
 00001a  0000              DCW      0x0000
@@ -1144,15 +1438,15 @@
                           AREA ||i.TIMER0_Polling||, CODE, READONLY, ALIGN=2
 
                   TIMER0_Polling PROC
-;;;806    
-;;;807    void TIMER0_Polling(uint32_t u32Usec)
+;;;1071   
+;;;1072   void TIMER0_Polling(uint32_t u32Usec)
 000000  4601              MOV      r1,r0
-;;;808    {
-;;;809    	TIMER_Delay(TIMER0, u32Usec);
+;;;1073   {
+;;;1074   	TIMER_Delay(TIMER0, u32Usec);
 000002  4801              LDR      r0,|L17.8|
 000004  f7ffbffe          B.W      TIMER_Delay
-;;;810    }
-;;;811    
+;;;1075   }
+;;;1076   
                           ENDP
 
                   |L17.8|
@@ -1161,22 +1455,22 @@
                           AREA ||i.TIMER1_HW_Init||, CODE, READONLY, ALIGN=2
 
                   TIMER1_HW_Init PROC
-;;;786    
-;;;787    void TIMER1_HW_Init(void)
+;;;1051   
+;;;1052   void TIMER1_HW_Init(void)
 000000  b510              PUSH     {r4,lr}
-;;;788    {
-;;;789        CLK_EnableModuleClock(TMR1_MODULE);
+;;;1053   {
+;;;1054       CLK_EnableModuleClock(TMR1_MODULE);
 000002  4c06              LDR      r4,|L18.28|
 000004  4620              MOV      r0,r4
 000006  f7fffffe          BL       CLK_EnableModuleClock
-;;;790        CLK_SetModuleClock(TMR1_MODULE, CLK_CLKSEL1_TMR1SEL_HIRC, 0);
+;;;1055       CLK_SetModuleClock(TMR1_MODULE, CLK_CLKSEL1_TMR1SEL_HIRC, 0);
 00000a  4620              MOV      r0,r4
 00000c  e8bd4010          POP      {r4,lr}
 000010  2200              MOVS     r2,#0
 000012  f44f41e0          MOV      r1,#0x7000
 000016  f7ffbffe          B.W      CLK_SetModuleClock
-;;;791    }
-;;;792    
+;;;1056   }
+;;;1057   
                           ENDP
 
 00001a  0000              DCW      0x0000
@@ -1186,11 +1480,11 @@
                           AREA ||i.TIMER1_Init||, CODE, READONLY, ALIGN=2
 
                   TIMER1_Init PROC
-;;;792    
-;;;793    void TIMER1_Init(void)
+;;;1057   
+;;;1058   void TIMER1_Init(void)
 000000  b510              PUSH     {r4,lr}
-;;;794    {
-;;;795        TIMER_Open(TIMER1, TIMER_PERIODIC_MODE, 1000);
+;;;1059   {
+;;;1060       TIMER_Open(TIMER1, TIMER_PERIODIC_MODE, 1000);
 000002  4c0a              LDR      r4,|L19.44|
 000004  f44f727a          MOV      r2,#0x3e8
 000008  f04f6100          MOV      r1,#0x8000000
@@ -1199,17 +1493,17 @@
 000012  6820              LDR      r0,[r4,#0]
 000014  f0405000          ORR      r0,r0,#0x20000000
 000018  6020              STR      r0,[r4,#0]
-;;;796        TIMER_EnableInt(TIMER1);
-;;;797        NVIC_EnableIRQ(TMR1_IRQn);	
+;;;1061       TIMER_EnableInt(TIMER1);
+;;;1062       NVIC_EnableIRQ(TMR1_IRQn);	
 00001a  2021              MOVS     r0,#0x21
 00001c  f7fffffe          BL       NVIC_EnableIRQ
 000020  6820              LDR      r0,[r4,#0]
 000022  f0404080          ORR      r0,r0,#0x40000000
 000026  6020              STR      r0,[r4,#0]
-;;;798        TIMER_Start(TIMER1);
-;;;799    }
+;;;1063       TIMER_Start(TIMER1);
+;;;1064   }
 000028  bd10              POP      {r4,pc}
-;;;800    
+;;;1065   
                           ENDP
 
 00002a  0000              DCW      0x0000
@@ -1219,47 +1513,47 @@
                           AREA ||i.TMR1_IRQHandler||, CODE, READONLY, ALIGN=2
 
                   TMR1_IRQHandler PROC
-;;;767    
-;;;768    void TMR1_IRQHandler(void)
+;;;1032   
+;;;1033   void TMR1_IRQHandler(void)
 000000  480b              LDR      r0,|L20.48|
 000002  6881              LDR      r1,[r0,#8]
 000004  f3c10100          UBFX     r1,r1,#0,#1
-;;;769    {
+;;;1034   {
 000008  2900              CMP      r1,#0
 00000a  d00f              BEQ      |L20.44|
 00000c  2101              MOVS     r1,#1
 00000e  6081              STR      r1,[r0,#8]
-;;;770    	static uint16_t CNT = 0;	
-;;;771    //	static uint32_t log = 0;	
-;;;772    	
-;;;773        if(TIMER_GetIntFlag(TIMER1) == 1)
-;;;774        {
-;;;775            TIMER_ClearIntFlag(TIMER1);
-;;;776    	
-;;;777    		if (CNT++ > 1000)
+;;;1035   	static uint16_t CNT = 0;	
+;;;1036   	static uint32_t log = 0;	
+;;;1037   	
+;;;1038       if(TIMER_GetIntFlag(TIMER1) == 1)
+;;;1039       {
+;;;1040           TIMER_ClearIntFlag(TIMER1);
+;;;1041   	
+;;;1042   		if (CNT++ > 1000)
 000010  4908              LDR      r1,|L20.52|
 000012  8848              LDRH     r0,[r1,#2]  ; CNT
 000014  1c42              ADDS     r2,r0,#1
 000016  804a              STRH     r2,[r1,#2]
 000018  f5b07f7a          CMP      r0,#0x3e8
 00001c  d906              BLS      |L20.44|
-;;;778    		{		
-;;;779    			CNT = 0;
+;;;1043   		{		
+;;;1044   			CNT = 0;
 00001e  2000              MOVS     r0,#0
 000020  8048              STRH     r0,[r1,#2]
-;;;780    //			printf("%s : %2d\r\n" , __FUNCTION__ , log++);
-;;;781    
-;;;782    			LED_G ^= 1;
+;;;1045   //			printf("%s : %2d\r\n" , __FUNCTION__ , log++);
+;;;1046   
+;;;1047   			LED_G ^= 1;
 000022  4805              LDR      r0,|L20.56|
 000024  6801              LDR      r1,[r0,#0]
 000026  f0810101          EOR      r1,r1,#1
 00002a  6001              STR      r1,[r0,#0]
                   |L20.44|
-;;;783    		}
-;;;784        }
-;;;785    }
+;;;1048   		}
+;;;1049       }
+;;;1050   }
 00002c  4770              BX       lr
-;;;786    
+;;;1051   
                           ENDP
 
 00002e  0000              DCW      0x0000
@@ -1273,46 +1567,46 @@
                           AREA ||i.UART0_IRQHandler||, CODE, READONLY, ALIGN=2
 
                   UART0_IRQHandler PROC
-;;;725    
-;;;726    void UART0_IRQHandler(void)
+;;;990    
+;;;991    void UART0_IRQHandler(void)
 000000  b510              PUSH     {r4,lr}
-;;;727    {
-;;;728        if(UART_GET_INT_FLAG(UART0, UART_INTSTS_RDAINT_Msk | UART_INTSTS_RXTOINT_Msk))     /* UART receive data available flag */
+;;;992    {
+;;;993        if(UART_GET_INT_FLAG(UART0, UART_INTSTS_RDAINT_Msk | UART_INTSTS_RXTOINT_Msk))     /* UART receive data available flag */
 000002  4c0b              LDR      r4,|L21.48|
 000004  69e0              LDR      r0,[r4,#0x1c]
 000006  f4105f88          TST      r0,#0x1100
 00000a  d102              BNE      |L21.18|
 00000c  e004              B        |L21.24|
                   |L21.14|
-;;;729        {
-;;;730            while(UART_GET_RX_EMPTY(UART0) == 0)
-;;;731            {
-;;;732    //			set_flag(flag_uart_rx,ENABLE);
-;;;733    			UARTx_Process();
+;;;994        {
+;;;995            while(UART_GET_RX_EMPTY(UART0) == 0)
+;;;996            {
+;;;997    //			set_flag(flag_uart_rx,ENABLE);
+;;;998    			UARTx_Process();
 00000e  f7fffffe          BL       UARTx_Process
                   |L21.18|
-000012  69a1              LDR      r1,[r4,#0x18]         ;730
-000014  0449              LSLS     r1,r1,#17             ;730
+000012  69a1              LDR      r1,[r4,#0x18]         ;995
+000014  0449              LSLS     r1,r1,#17             ;995
 000016  d5fa              BPL      |L21.14|
                   |L21.24|
-;;;734            }
-;;;735        }
-;;;736    
-;;;737        if(UART0->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
+;;;999            }
+;;;1000       }
+;;;1001   
+;;;1002       if(UART0->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
 000018  69a1              LDR      r1,[r4,#0x18]
 00001a  4620              MOV      r0,r4
 00001c  f0110f71          TST      r1,#0x71
 000020  d005              BEQ      |L21.46|
-;;;738        {
-;;;739            UART_ClearIntFlag(UART0, (UART_INTSTS_RLSINT_Msk| UART_INTSTS_BUFERRINT_Msk));
+;;;1003       {
+;;;1004           UART_ClearIntFlag(UART0, (UART_INTSTS_RLSINT_Msk| UART_INTSTS_BUFERRINT_Msk));
 000022  e8bd4010          POP      {r4,lr}
 000026  f44f5110          MOV      r1,#0x2400
 00002a  f7ffbffe          B.W      UART_ClearIntFlag
                   |L21.46|
-;;;740        }
-;;;741    }
+;;;1005       }
+;;;1006   }
 00002e  bd10              POP      {r4,pc}
-;;;742    
+;;;1007   
                           ENDP
 
                   |L21.48|
@@ -1326,75 +1620,75 @@
                           REQUIRE _printf_d
                           REQUIRE _printf_int_dec
                   UART0_Init PROC
-;;;742    
-;;;743    void UART0_Init(void)
+;;;1007   
+;;;1008   void UART0_Init(void)
 000000  b510              PUSH     {r4,lr}
-;;;744    {
-;;;745        SYS_ResetModule(UART0_RST);
+;;;1009   {
+;;;1010       SYS_ResetModule(UART0_RST);
 000002  481e              LDR      r0,|L22.124|
 000004  f7fffffe          BL       SYS_ResetModule
-;;;746    
-;;;747        /* Configure UART0 and set UART0 baud rate */
-;;;748        UART_Open(UART0, 115200);
+;;;1011   
+;;;1012       /* Configure UART0 and set UART0 baud rate */
+;;;1013       UART_Open(UART0, 115200);
 000008  4c1d              LDR      r4,|L22.128|
 00000a  f44f31e1          MOV      r1,#0x1c200
 00000e  4620              MOV      r0,r4
 000010  f7fffffe          BL       UART_Open
-;;;749    
-;;;750    	/* Set UART receive time-out */
-;;;751    	UART_SetTimeoutCnt(UART0, 20);
+;;;1014   
+;;;1015   	/* Set UART receive time-out */
+;;;1016   	UART_SetTimeoutCnt(UART0, 20);
 000014  2114              MOVS     r1,#0x14
 000016  4620              MOV      r0,r4
 000018  f7fffffe          BL       UART_SetTimeoutCnt
-;;;752    
-;;;753    	UART0->FIFO &= ~UART_FIFO_RFITL_4BYTES;
+;;;1017   
+;;;1018   	UART0->FIFO &= ~UART_FIFO_RFITL_4BYTES;
 00001c  68a0              LDR      r0,[r4,#8]
 00001e  f0200010          BIC      r0,r0,#0x10
 000022  60a0              STR      r0,[r4,#8]
-;;;754    	UART0->FIFO |= UART_FIFO_RFITL_8BYTES;
+;;;1019   	UART0->FIFO |= UART_FIFO_RFITL_8BYTES;
 000024  68a0              LDR      r0,[r4,#8]
 000026  f0400020          ORR      r0,r0,#0x20
 00002a  60a0              STR      r0,[r4,#8]
-;;;755    
-;;;756    	/* Enable UART Interrupt - */
-;;;757    	UART_ENABLE_INT(UART0, UART_INTEN_RDAIEN_Msk | UART_INTEN_TOCNTEN_Msk | UART_INTEN_RXTOIEN_Msk);
+;;;1020   
+;;;1021   	/* Enable UART Interrupt - */
+;;;1022   	UART_ENABLE_INT(UART0, UART_INTEN_RDAIEN_Msk | UART_INTEN_TOCNTEN_Msk | UART_INTEN_RXTOIEN_Msk);
 00002c  6860              LDR      r0,[r4,#4]
 00002e  f6400111          MOV      r1,#0x811
 000032  4308              ORRS     r0,r0,r1
 000034  6060              STR      r0,[r4,#4]
-;;;758    	
-;;;759    	NVIC_EnableIRQ(UART0_IRQn);
+;;;1023   	
+;;;1024   	NVIC_EnableIRQ(UART0_IRQn);
 000036  2024              MOVS     r0,#0x24
 000038  f7fffffe          BL       NVIC_EnableIRQ
-;;;760    
-;;;761    	printf("\r\nCLK_GetCPUFreq : %8d\r\n",CLK_GetCPUFreq());
+;;;1025   
+;;;1026   	printf("\r\nCLK_GetCPUFreq : %8d\r\n",CLK_GetCPUFreq());
 00003c  f7fffffe          BL       CLK_GetCPUFreq
 000040  4601              MOV      r1,r0
 000042  a010              ADR      r0,|L22.132|
 000044  f7fffffe          BL       __2printf
-;;;762    	printf("CLK_GetHXTFreq : %8d\r\n",CLK_GetHXTFreq());
+;;;1027   	printf("CLK_GetHXTFreq : %8d\r\n",CLK_GetHXTFreq());
 000048  f7fffffe          BL       CLK_GetHXTFreq
 00004c  4601              MOV      r1,r0
 00004e  a014              ADR      r0,|L22.160|
 000050  f7fffffe          BL       __2printf
-;;;763    	printf("CLK_GetLXTFreq : %8d\r\n",CLK_GetLXTFreq());	
+;;;1028   	printf("CLK_GetLXTFreq : %8d\r\n",CLK_GetLXTFreq());	
 000054  f7fffffe          BL       CLK_GetLXTFreq
 000058  4601              MOV      r1,r0
 00005a  a017              ADR      r0,|L22.184|
 00005c  f7fffffe          BL       __2printf
-;;;764    	printf("CLK_GetPCLK0Freq : %8d\r\n",CLK_GetPCLK0Freq());
+;;;1029   	printf("CLK_GetPCLK0Freq : %8d\r\n",CLK_GetPCLK0Freq());
 000060  f7fffffe          BL       CLK_GetPCLK0Freq
 000064  4601              MOV      r1,r0
 000066  a01a              ADR      r0,|L22.208|
 000068  f7fffffe          BL       __2printf
-;;;765    	printf("CLK_GetPCLK1Freq : %8d\r\n",CLK_GetPCLK1Freq());	
+;;;1030   	printf("CLK_GetPCLK1Freq : %8d\r\n",CLK_GetPCLK1Freq());	
 00006c  f7fffffe          BL       CLK_GetPCLK1Freq
 000070  4601              MOV      r1,r0
 000072  e8bd4010          POP      {r4,lr}
 000076  a01d              ADR      r0,|L22.236|
 000078  f7ffbffe          B.W      __2printf
-;;;766    }
-;;;767    
+;;;1031   }
+;;;1032   
                           ENDP
 
                   |L22.124|
@@ -1461,109 +1755,109 @@
                           REQUIRE _printf_d
                           REQUIRE _printf_int_dec
                   UARTx_Process PROC
-;;;529    
-;;;530    void UARTx_Process(void)
+;;;794    
+;;;795    void UARTx_Process(void)
 000000  e92d41f0          PUSH     {r4-r8,lr}
-;;;531    {
-;;;532    	uint8_t res = 0;
-;;;533        uint16_t i = 0;
-;;;534    	static uint8_t cnt = 0;
-;;;535        uint16_t page_cnt = 0;
-;;;536    	
-;;;537    	res = UART_READ(UART0);
+;;;796    {
+;;;797    	uint8_t res = 0;
+;;;798        uint16_t i = 0;
+;;;799    	static uint8_t cnt = 0;
+;;;800        uint16_t page_cnt = 0;
+;;;801    	
+;;;802    	res = UART_READ(UART0);
 000004  4888              LDR      r0,|L23.552|
-000006  2500              MOVS     r5,#0                 ;533
-000008  462c              MOV      r4,r5                 ;535
+000006  2500              MOVS     r5,#0                 ;798
+000008  462c              MOV      r4,r5                 ;800
 00000a  6800              LDR      r0,[r0,#0]
 00000c  b2c0              UXTB     r0,r0
-;;;538    
-;;;539    	if (res > 0x7F)
+;;;803    
+;;;804    	if (res > 0x7F)
 00000e  287f              CMP      r0,#0x7f
 000010  d901              BLS      |L23.22|
-;;;540    	{
-;;;541    		printf("invalid command\r\n");
+;;;805    	{
+;;;806    		printf("invalid command\r\n");
 000012  a086              ADR      r0,|L23.556|
 000014  e0fc              B        |L23.528|
                   |L23.22|
-;;;542    	}
-;;;543    	else
-;;;544    	{
-;;;545    		switch(res)
-;;;546    		{
-;;;547    			case '?':
-;;;548    
-;;;549    				printf("\r\n==========================\r\n");
-;;;550    				
-;;;551    				printf("1: chip erase\r\n");
-;;;552    				printf("2: fill in TX data\r\n");
-;;;553    				printf("3: page counter\r\n");
-;;;554    				printf("4: Page write\r\n");
-;;;555    				printf("5: Page read\r\n");		
-;;;556    				printf("6: self test , write , read , compare\r\n");	
-;;;557    				printf("7: self test , write , read , compare  , with PDMA\r\n");
-;;;558    				
-;;;559    				printf("8: read ID (0x90)\r\n");	
-;;;560    				
-;;;561    				printf("==========================\r\n\r\n");
-;;;562    				break;	
-;;;563    
-;;;564    		
-;;;565    			case '1':
-;;;566    				printf("perform SpiFlash_ChipErase\r\n");
-;;;567    				
-;;;568    			    /* Erase SPI flash */
-;;;569    			    SpiFlash_ChipErase();
-;;;570    
-;;;571    			    /* Wait ready */
-;;;572    			    SpiFlash_WaitReady();
-;;;573    
-;;;574    				printf("erase finish\r\n\r\n");
-;;;575    				break;	
-;;;576    
-;;;577    			case '2':
-;;;578    				printf("increase test data start from 0x%2X\r\n" , cnt);
-;;;579    
-;;;580    				//reset TxBuffer
-;;;581    				reset_buffer(TxBuffer,SPI_FLASH_PAGE_BYTE);
+;;;807    	}
+;;;808    	else
+;;;809    	{
+;;;810    		switch(res)
+;;;811    		{
+;;;812    			case '?':
+;;;813    
+;;;814    				printf("\r\n==========================\r\n");
+;;;815    				
+;;;816    				printf("1: chip erase\r\n");
+;;;817    				printf("2: fill in TX data\r\n");
+;;;818    				printf("3: page counter\r\n");
+;;;819    				printf("4: Page write\r\n");
+;;;820    				printf("5: Page read\r\n");		
+;;;821    				printf("6: self test , write , read , compare\r\n");	
+;;;822    				printf("7: self test , write , read , compare  , with PDMA\r\n");
+;;;823    				
+;;;824    				printf("8: read ID (0x90)\r\n");	
+;;;825    				
+;;;826    				printf("==========================\r\n\r\n");
+;;;827    				break;	
+;;;828    
+;;;829    		
+;;;830    			case '1':
+;;;831    				printf("perform SpiFlash_ChipErase\r\n");
+;;;832    				
+;;;833    			    /* Erase SPI flash */
+;;;834    			    SpiFlash_ChipErase();
+;;;835    
+;;;836    			    /* Wait ready */
+;;;837    			    SpiFlash_WaitReady();
+;;;838    
+;;;839    				printf("erase finish\r\n\r\n");
+;;;840    				break;	
+;;;841    
+;;;842    			case '2':
+;;;843    				printf("increase test data start from 0x%2X\r\n" , cnt);
+;;;844    
+;;;845    				//reset TxBuffer
+;;;846    				reset_buffer(TxBuffer,SPI_FLASH_PAGE_BYTE);
 000016  f8df8228          LDR      r8,|L23.576|
 00001a  4e8a              LDR      r6,|L23.580|
 00001c  f44f7780          MOV      r7,#0x100
-000020  2837              CMP      r0,#0x37              ;545
+000020  2837              CMP      r0,#0x37              ;810
 000022  d075              BEQ      |L23.272|
 000024  dc08              BGT      |L23.56|
-000026  f1a00031          SUB      r0,r0,#0x31           ;545
-00002a  2806              CMP      r0,#6                 ;545
+000026  f1a00031          SUB      r0,r0,#0x31           ;810
+00002a  2806              CMP      r0,#6                 ;810
 00002c  d25f              BCS      |L23.238|
-00002e  e8dff000          TBB      [pc,r0]               ;545
+00002e  e8dff000          TBB      [pc,r0]               ;810
 000032  3b44              DCB      0x3b,0x44
 000034  60657183          DCB      0x60,0x65,0x71,0x83
                   |L23.56|
-000038  285a              CMP      r0,#0x5a              ;545
+000038  285a              CMP      r0,#0x5a              ;810
 00003a  d00b              BEQ      |L23.84|
 00003c  dc06              BGT      |L23.76|
-00003e  2838              CMP      r0,#0x38              ;545
+00003e  2838              CMP      r0,#0x38              ;810
 000040  d067              BEQ      |L23.274|
-000042  283f              CMP      r0,#0x3f              ;545
+000042  283f              CMP      r0,#0x3f              ;810
 000044  d013              BEQ      |L23.110|
-000046  2858              CMP      r0,#0x58              ;545
+000046  2858              CMP      r0,#0x58              ;810
 000048  d151              BNE      |L23.238|
 00004a  e003              B        |L23.84|
                   |L23.76|
-00004c  2878              CMP      r0,#0x78              ;545
+00004c  2878              CMP      r0,#0x78              ;810
 00004e  d001              BEQ      |L23.84|
-000050  287a              CMP      r0,#0x7a              ;545
+000050  287a              CMP      r0,#0x7a              ;810
 000052  d14c              BNE      |L23.238|
                   |L23.84|
-000054  f3bf8f4f          DSB                            ;545
+000054  f3bf8f4f          DSB                            ;810
 000058  497b              LDR      r1,|L23.584|
-00005a  6808              LDR      r0,[r1,#0]            ;545
+00005a  6808              LDR      r0,[r1,#0]            ;810
 00005c  4a7b              LDR      r2,|L23.588|
-00005e  f40060e0          AND      r0,r0,#0x700          ;545
-000062  4310              ORRS     r0,r0,r2              ;545
-000064  6008              STR      r0,[r1,#0]            ;545
-000066  f3bf8f4f          DSB                            ;545
+00005e  f40060e0          AND      r0,r0,#0x700          ;810
+000062  4310              ORRS     r0,r0,r2              ;810
+000064  6008              STR      r0,[r1,#0]            ;810
+000066  f3bf8f4f          DSB                            ;810
                   |L23.106|
-00006a  bf00              NOP                            ;545
+00006a  bf00              NOP                            ;810
 00006c  e7fd              B        |L23.106|
                   |L23.110|
 00006e  a078              ADR      r0,|L23.592|
@@ -1592,184 +1886,184 @@
 0000b2  f7fffffe          BL       SpiFlash_WaitReady
 0000b6  a0b2              ADR      r0,|L23.896|
 0000b8  e0aa              B        |L23.528|
-0000ba  7871              LDRB     r1,[r6,#1]            ;578  ; cnt
+0000ba  7871              LDRB     r1,[r6,#1]            ;843  ; cnt
 0000bc  a0b5              ADR      r0,|L23.916|
 0000be  f7fffffe          BL       __2printf
 0000c2  4639              MOV      r1,r7
 0000c4  485e              LDR      r0,|L23.576|
 0000c6  f7fffffe          BL       reset_buffer
-0000ca  7872              LDRB     r2,[r6,#1]            ;578
+0000ca  7872              LDRB     r2,[r6,#1]            ;843
 0000cc  4641              MOV      r1,r8
                   |L23.206|
-;;;582    
-;;;583    				//fill in data
-;;;584    			    for ( i = 0; i < SPI_FLASH_PAGE_BYTE; i++)
-;;;585    			    {
-;;;586    			        TxBuffer[i] = 0x00 + i + cnt;
+;;;847    
+;;;848    				//fill in data
+;;;849    			    for ( i = 0; i < SPI_FLASH_PAGE_BYTE; i++)
+;;;850    			    {
+;;;851    			        TxBuffer[i] = 0x00 + i + cnt;
 0000ce  18a8              ADDS     r0,r5,r2
 0000d0  5548              STRB     r0,[r1,r5]
 0000d2  1c6d              ADDS     r5,r5,#1
-0000d4  b2ad              UXTH     r5,r5                 ;584
-0000d6  2dff              CMP      r5,#0xff              ;584
+0000d4  b2ad              UXTH     r5,r5                 ;849
+0000d6  2dff              CMP      r5,#0xff              ;849
 0000d8  d9f9              BLS      |L23.206|
-;;;587    			    }
-;;;588    
-;;;589    				printf("TxBuffer : \r\n");
+;;;852    			    }
+;;;853    
+;;;854    				printf("TxBuffer : \r\n");
 0000da  a0b8              ADR      r0,|L23.956|
 0000dc  f7fffffe          BL       __2printf
-;;;590    				dump_buffer_hex(TxBuffer,SPI_FLASH_PAGE_BYTE);				
+;;;855    				dump_buffer_hex(TxBuffer,SPI_FLASH_PAGE_BYTE);				
 0000e0  4639              MOV      r1,r7
 0000e2  4857              LDR      r0,|L23.576|
 0000e4  f7fffffe          BL       dump_buffer_hex
-;;;591    				cnt++; 
+;;;856    				cnt++; 
 0000e8  7870              LDRB     r0,[r6,#1]  ; cnt
 0000ea  1c40              ADDS     r0,r0,#1
 0000ec  7070              STRB     r0,[r6,#1]
                   |L23.238|
-;;;592    			
-;;;593    				break;
-;;;594    
-;;;595    			case '3':
-;;;596    				printf("SPI_FLASH_page_counter current : 0x%2X\r\n\r\n" ,SPI_FLASH_page_counter++);	
-;;;597    			
-;;;598    				break;
-;;;599    
-;;;600    			case '4':
-;;;601    				printf("programming...\r\n");
-;;;602    				SpiFlash_PageWrite(SPI_FLASH_page_counter,TxBuffer,DISABLE);
-;;;603    				printf("programming finish\r\n\r\n");
-;;;604    				
-;;;605    				break;
-;;;606    
-;;;607    			case '5':
-;;;608    				//reset RxBuffer
-;;;609    			    reset_buffer(RxBuffer,SPI_FLASH_PAGE_BYTE);
-;;;610    
-;;;611    				printf("read page ...\r\n");
-;;;612    				SpiFlash_PageRead(SPI_FLASH_page_counter,RxBuffer,DISABLE);
-;;;613    				dump_buffer_hex(RxBuffer,SPI_FLASH_PAGE_BYTE);				
-;;;614    				printf("read page finish\r\n\r\n");	
-;;;615    				
-;;;616    				break;				
-;;;617    
-;;;618    			case '6':
-;;;619    				//reset RxBuffer
-;;;620    			    reset_buffer(RxBuffer,SPI_FLASH_PAGE_BYTE);
-;;;621    
-;;;622    				printf("perform SpiFlash_ChipErase\r\n");
-;;;623    				
-;;;624    			    /* Erase SPI flash */
-;;;625    			    SpiFlash_ChipErase();
-;;;626    
-;;;627    			    /* Wait ready */
-;;;628    			    SpiFlash_WaitReady();
-;;;629    
-;;;630    				printf("erase finish\r\n\r\n");
-;;;631    
-;;;632    				for ( page_cnt = 0 ; page_cnt < TEST_NUMBER ; page_cnt++)
-;;;633    				{
-;;;634    					printf("\r\nSELF TEST ... (page : %2d)\r\n" , page_cnt);
-;;;635    
-;;;636    					//reset TxBuffer
-;;;637    					reset_buffer(TxBuffer,SPI_FLASH_PAGE_BYTE);
-;;;638    
-;;;639    					//fill in data
-;;;640    				    for ( i = 0; i < SPI_FLASH_PAGE_BYTE; i++)
-;;;641    				    {
-;;;642    				        TxBuffer[i] = 0x00 + i + cnt;
-;;;643    				    }
-;;;644    
-;;;645    //					printf("\r\nTxBuffer : \r\n");
-;;;646    //					dump_buffer_hex(TxBuffer,SPI_FLASH_PAGE_BYTE);				
-;;;647    					cnt++;
-;;;648    					
-;;;649    					SpiFlash_PageWrite(page_cnt,TxBuffer,DISABLE);
-;;;650    					SpiFlash_PageRead(page_cnt,RxBuffer,DISABLE);
-;;;651    
-;;;652    //					printf("\r\nRxBuffer\r\n");
-;;;653    //					dump_buffer_hex(RxBuffer,SPI_FLASH_PAGE_BYTE);		
-;;;654    
-;;;655    					compare_buffer(TxBuffer,RxBuffer,SPI_FLASH_PAGE_BYTE);
-;;;656    				}
-;;;657    
-;;;658    				printf("SELF TEST finish\r\n\r\n");	
-;;;659    			
-;;;660    				break;	
-;;;661    
-;;;662    
-;;;663    			case '7':
-;;;664    
-;;;665    				//reset RxBuffer
-;;;666    			    reset_buffer(RxBuffer,SPI_FLASH_PAGE_BYTE);
-;;;667    
-;;;668    				printf("perform SpiFlash_ChipErase\r\n");
-;;;669    				
-;;;670    			    /* Erase SPI flash */
-;;;671    			    SpiFlash_ChipErase();
-;;;672    
-;;;673    			    /* Wait ready */
-;;;674    			    SpiFlash_WaitReady();
-;;;675    
-;;;676    				printf("erase finish\r\n\r\n");
-;;;677    
-;;;678    				for ( page_cnt = 0 ; page_cnt < TEST_NUMBER ; page_cnt++)
-;;;679    				{
-;;;680    					printf("\r\nPDMA SELF TEST ... (page : %2d)\r\n" , page_cnt);
-;;;681    
-;;;682    					//reset TxBuffer
-;;;683    					reset_buffer(TxBuffer,SPI_FLASH_PAGE_BYTE);
-;;;684    
-;;;685    					//fill in data
-;;;686    				    for ( i = 0; i < SPI_FLASH_PAGE_BYTE; i++)
-;;;687    				    {
-;;;688    				        TxBuffer[i] = 0x00 + i + cnt;
-;;;689    				    }
-;;;690    
-;;;691    //					printf("\r\nTxBuffer : \r\n");
-;;;692    //					dump_buffer_hex(TxBuffer,SPI_FLASH_PAGE_BYTE);				
-;;;693    					cnt++;
-;;;694    					
-;;;695    					SpiFlash_PageWrite(page_cnt,TxBuffer,ENABLE);
-;;;696    					SpiFlash_PageRead(page_cnt,RxBuffer,ENABLE);
-;;;697    
-;;;698    //					printf("\r\nRxBuffer\r\n");
-;;;699    //					dump_buffer_hex(RxBuffer,SPI_FLASH_PAGE_BYTE);		
-;;;700    
-;;;701    					compare_buffer(TxBuffer,RxBuffer,SPI_FLASH_PAGE_BYTE);
-;;;702    				}
-;;;703    
-;;;704    				printf("PDMA SELF TEST finish\r\n\r\n");	
-;;;705    
-;;;706    				break;
-;;;707    
-;;;708    			case '8':			
-;;;709    				i = SpiFlash_ReadMidDid();
-;;;710    				printf("SpiFlash_ReadMidDid : 0x%2X\r\n\n" , i);
-;;;711    				
-;;;712    				break;
-;;;713    
-;;;714    			case 'X':
-;;;715    			case 'x':
-;;;716    			case 'Z':
-;;;717    			case 'z':
-;;;718    				NVIC_SystemReset();
-;;;719    			
-;;;720    				break;		
-;;;721    			
-;;;722    		}
-;;;723    	}
-;;;724    }
+;;;857    			
+;;;858    				break;
+;;;859    
+;;;860    			case '3':
+;;;861    				printf("SPI_FLASH_page_counter current : 0x%2X\r\n\r\n" ,SPI_FLASH_page_counter++);	
+;;;862    			
+;;;863    				break;
+;;;864    
+;;;865    			case '4':
+;;;866    				printf("programming...\r\n");
+;;;867    				SpiFlash_PageWrite(SPI_FLASH_page_counter,TxBuffer,DISABLE);
+;;;868    				printf("programming finish\r\n\r\n");
+;;;869    				
+;;;870    				break;
+;;;871    
+;;;872    			case '5':
+;;;873    				//reset RxBuffer
+;;;874    			    reset_buffer(RxBuffer,SPI_FLASH_PAGE_BYTE);
+;;;875    
+;;;876    				printf("read page ...\r\n");
+;;;877    				SpiFlash_PageRead(SPI_FLASH_page_counter,RxBuffer,DISABLE);
+;;;878    				dump_buffer_hex(RxBuffer,SPI_FLASH_PAGE_BYTE);				
+;;;879    				printf("read page finish\r\n\r\n");	
+;;;880    				
+;;;881    				break;				
+;;;882    
+;;;883    			case '6':
+;;;884    				//reset RxBuffer
+;;;885    			    reset_buffer(RxBuffer,SPI_FLASH_PAGE_BYTE);
+;;;886    
+;;;887    				printf("perform SpiFlash_ChipErase\r\n");
+;;;888    				
+;;;889    			    /* Erase SPI flash */
+;;;890    			    SpiFlash_ChipErase();
+;;;891    
+;;;892    			    /* Wait ready */
+;;;893    			    SpiFlash_WaitReady();
+;;;894    
+;;;895    				printf("erase finish\r\n\r\n");
+;;;896    
+;;;897    				for ( page_cnt = 0 ; page_cnt < TEST_NUMBER ; page_cnt++)
+;;;898    				{
+;;;899    					printf("\r\nSELF TEST ... (page : %2d)\r\n" , page_cnt);
+;;;900    
+;;;901    					//reset TxBuffer
+;;;902    					reset_buffer(TxBuffer,SPI_FLASH_PAGE_BYTE);
+;;;903    
+;;;904    					//fill in data
+;;;905    				    for ( i = 0; i < SPI_FLASH_PAGE_BYTE; i++)
+;;;906    				    {
+;;;907    				        TxBuffer[i] = 0x00 + i + cnt;
+;;;908    				    }
+;;;909    
+;;;910    //					printf("\r\nTxBuffer : \r\n");
+;;;911    //					dump_buffer_hex(TxBuffer,SPI_FLASH_PAGE_BYTE);				
+;;;912    					cnt++;
+;;;913    					
+;;;914    					SpiFlash_PageWrite(page_cnt,TxBuffer,DISABLE);
+;;;915    					SpiFlash_PageRead(page_cnt,RxBuffer,DISABLE);
+;;;916    
+;;;917    //					printf("\r\nRxBuffer\r\n");
+;;;918    //					dump_buffer_hex(RxBuffer,SPI_FLASH_PAGE_BYTE);		
+;;;919    
+;;;920    					compare_buffer(TxBuffer,RxBuffer,SPI_FLASH_PAGE_BYTE);
+;;;921    				}
+;;;922    
+;;;923    				printf("SELF TEST finish\r\n\r\n");	
+;;;924    			
+;;;925    				break;	
+;;;926    
+;;;927    
+;;;928    			case '7':
+;;;929    
+;;;930    				//reset RxBuffer
+;;;931    			    reset_buffer(RxBuffer,SPI_FLASH_PAGE_BYTE);
+;;;932    
+;;;933    				printf("perform SpiFlash_ChipErase\r\n");
+;;;934    				
+;;;935    			    /* Erase SPI flash */
+;;;936    			    SpiFlash_ChipErase();
+;;;937    
+;;;938    			    /* Wait ready */
+;;;939    			    SpiFlash_WaitReady();
+;;;940    
+;;;941    				printf("erase finish\r\n\r\n");
+;;;942    
+;;;943    				for ( page_cnt = 0 ; page_cnt < TEST_NUMBER ; page_cnt++)
+;;;944    				{
+;;;945    					printf("\r\nPDMA SELF TEST ... (page : %2d)\r\n" , page_cnt);
+;;;946    
+;;;947    					//reset TxBuffer
+;;;948    					reset_buffer(TxBuffer,SPI_FLASH_PAGE_BYTE);
+;;;949    
+;;;950    					//fill in data
+;;;951    				    for ( i = 0; i < SPI_FLASH_PAGE_BYTE; i++)
+;;;952    				    {
+;;;953    				        TxBuffer[i] = 0x00 + i + cnt;
+;;;954    				    }
+;;;955    
+;;;956    //					printf("\r\nTxBuffer : \r\n");
+;;;957    //					dump_buffer_hex(TxBuffer,SPI_FLASH_PAGE_BYTE);				
+;;;958    					cnt++;
+;;;959    					
+;;;960    					SpiFlash_PageWrite(page_cnt,TxBuffer,ENABLE);
+;;;961    					SpiFlash_PageRead(page_cnt,RxBuffer,ENABLE);
+;;;962    
+;;;963    //					printf("\r\nRxBuffer\r\n");
+;;;964    //					dump_buffer_hex(RxBuffer,SPI_FLASH_PAGE_BYTE);		
+;;;965    
+;;;966    					compare_buffer(TxBuffer,RxBuffer,SPI_FLASH_PAGE_BYTE);
+;;;967    				}
+;;;968    
+;;;969    				printf("PDMA SELF TEST finish\r\n\r\n");	
+;;;970    
+;;;971    				break;
+;;;972    
+;;;973    			case '8':			
+;;;974    				i = SpiFlash_ReadMidDid();
+;;;975    				printf("SpiFlash_ReadMidDid : 0x%2X\r\n\n" , i);
+;;;976    				
+;;;977    				break;
+;;;978    
+;;;979    			case 'X':
+;;;980    			case 'x':
+;;;981    			case 'Z':
+;;;982    			case 'z':
+;;;983    				NVIC_SystemReset();
+;;;984    			
+;;;985    				break;		
+;;;986    			
+;;;987    		}
+;;;988    	}
+;;;989    }
 0000ee  e8bd81f0          POP      {r4-r8,pc}
-0000f2  7831              LDRB     r1,[r6,#0]            ;596  ; SPI_FLASH_page_counter
-0000f4  1c48              ADDS     r0,r1,#1              ;596
-0000f6  7030              STRB     r0,[r6,#0]            ;596
+0000f2  7831              LDRB     r1,[r6,#0]            ;861  ; SPI_FLASH_page_counter
+0000f4  1c48              ADDS     r0,r1,#1              ;861
+0000f6  7030              STRB     r0,[r6,#0]            ;861
 0000f8  a0b4              ADR      r0,|L23.972|
 0000fa  e091              B        |L23.544|
 0000fc  a0be              ADR      r0,|L23.1016|
 0000fe  f7fffffe          BL       __2printf
-000102  2200              MOVS     r2,#0                 ;602
+000102  2200              MOVS     r2,#0                 ;867
 000104  494e              LDR      r1,|L23.576|
-000106  7830              LDRB     r0,[r6,#0]            ;602  ; SPI_FLASH_page_counter
+000106  7830              LDRB     r0,[r6,#0]            ;867  ; SPI_FLASH_page_counter
 000108  f7fffffe          BL       SpiFlash_PageWrite
 00010c  a0bf              ADR      r0,|L23.1036|
 00010e  e07f              B        |L23.528|
@@ -1777,22 +2071,22 @@
 000110  e049              B        |L23.422|
                   |L23.274|
 000112  e081              B        |L23.536|
-000114  4639              MOV      r1,r7                 ;609
+000114  4639              MOV      r1,r7                 ;874
 000116  48c3              LDR      r0,|L23.1060|
 000118  f7fffffe          BL       reset_buffer
 00011c  a0c2              ADR      r0,|L23.1064|
 00011e  f7fffffe          BL       __2printf
-000122  2200              MOVS     r2,#0                 ;612
+000122  2200              MOVS     r2,#0                 ;877
 000124  49bf              LDR      r1,|L23.1060|
-000126  7830              LDRB     r0,[r6,#0]            ;612  ; SPI_FLASH_page_counter
+000126  7830              LDRB     r0,[r6,#0]            ;877  ; SPI_FLASH_page_counter
 000128  f7fffffe          BL       SpiFlash_PageRead
-00012c  4639              MOV      r1,r7                 ;613
+00012c  4639              MOV      r1,r7                 ;878
 00012e  48bd              LDR      r0,|L23.1060|
 000130  f7fffffe          BL       dump_buffer_hex
 000134  a0c0              ADR      r0,|L23.1080|
 000136  e06b              B        |L23.528|
-000138  463d              MOV      r5,r7                 ;620
-00013a  4639              MOV      r1,r7                 ;620
+000138  463d              MOV      r5,r7                 ;885
+00013a  4639              MOV      r1,r7                 ;885
 00013c  48b9              LDR      r0,|L23.1060|
 00013e  f7fffffe          BL       reset_buffer
 000142  a087              ADR      r0,|L23.864|
@@ -1801,45 +2095,45 @@
 00014c  f7fffffe          BL       SpiFlash_WaitReady
 000150  a08b              ADR      r0,|L23.896|
 000152  f7fffffe          BL       __2printf
-000156  4647              MOV      r7,r8                 ;581
+000156  4647              MOV      r7,r8                 ;846
                   |L23.344|
-000158  4621              MOV      r1,r4                 ;634
+000158  4621              MOV      r1,r4                 ;899
 00015a  a0bd              ADR      r0,|L23.1104|
 00015c  f7fffffe          BL       __2printf
-000160  4629              MOV      r1,r5                 ;637
+000160  4629              MOV      r1,r5                 ;902
 000162  4837              LDR      r0,|L23.576|
 000164  f7fffffe          BL       reset_buffer
-000168  7871              LDRB     r1,[r6,#1]            ;578
-00016a  2000              MOVS     r0,#0                 ;640
+000168  7871              LDRB     r1,[r6,#1]            ;843
+00016a  2000              MOVS     r0,#0                 ;905
                   |L23.364|
-00016c  1842              ADDS     r2,r0,r1              ;642
-00016e  543a              STRB     r2,[r7,r0]            ;642
-000170  1c40              ADDS     r0,r0,#1              ;642
-000172  b280              UXTH     r0,r0                 ;640
-000174  28ff              CMP      r0,#0xff              ;640
+00016c  1842              ADDS     r2,r0,r1              ;907
+00016e  543a              STRB     r2,[r7,r0]            ;907
+000170  1c40              ADDS     r0,r0,#1              ;907
+000172  b280              UXTH     r0,r0                 ;905
+000174  28ff              CMP      r0,#0xff              ;905
 000176  d9f9              BLS      |L23.364|
-000178  1c49              ADDS     r1,r1,#1              ;640
-00017a  7071              STRB     r1,[r6,#1]            ;647
-00017c  2200              MOVS     r2,#0                 ;649
+000178  1c49              ADDS     r1,r1,#1              ;905
+00017a  7071              STRB     r1,[r6,#1]            ;912
+00017c  2200              MOVS     r2,#0                 ;914
 00017e  4930              LDR      r1,|L23.576|
-000180  4620              MOV      r0,r4                 ;649
+000180  4620              MOV      r0,r4                 ;914
 000182  f7fffffe          BL       SpiFlash_PageWrite
-000186  2200              MOVS     r2,#0                 ;650
+000186  2200              MOVS     r2,#0                 ;915
 000188  49a6              LDR      r1,|L23.1060|
-00018a  4620              MOV      r0,r4                 ;650
+00018a  4620              MOV      r0,r4                 ;915
 00018c  f7fffffe          BL       SpiFlash_PageRead
-000190  462a              MOV      r2,r5                 ;655
+000190  462a              MOV      r2,r5                 ;920
 000192  49a4              LDR      r1,|L23.1060|
 000194  482a              LDR      r0,|L23.576|
 000196  f7fffffe          BL       compare_buffer
-00019a  1c64              ADDS     r4,r4,#1              ;655
-00019c  b2a4              UXTH     r4,r4                 ;632
-00019e  2c10              CMP      r4,#0x10              ;632
+00019a  1c64              ADDS     r4,r4,#1              ;920
+00019c  b2a4              UXTH     r4,r4                 ;897
+00019e  2c10              CMP      r4,#0x10              ;897
 0001a0  d3da              BCC      |L23.344|
 0001a2  a0b3              ADR      r0,|L23.1136|
 0001a4  e034              B        |L23.528|
                   |L23.422|
-0001a6  4639              MOV      r1,r7                 ;666
+0001a6  4639              MOV      r1,r7                 ;931
 0001a8  489e              LDR      r0,|L23.1060|
 0001aa  f7fffffe          BL       reset_buffer
 0001ae  a06c              ADR      r0,|L23.864|
@@ -1848,53 +2142,53 @@
 0001b8  f7fffffe          BL       SpiFlash_WaitReady
 0001bc  a070              ADR      r0,|L23.896|
 0001be  f7fffffe          BL       __2printf
-0001c2  4645              MOV      r5,r8                 ;581
+0001c2  4645              MOV      r5,r8                 ;846
                   |L23.452|
-0001c4  4621              MOV      r1,r4                 ;680
+0001c4  4621              MOV      r1,r4                 ;945
 0001c6  a0b0              ADR      r0,|L23.1160|
 0001c8  f7fffffe          BL       __2printf
-0001cc  4639              MOV      r1,r7                 ;683
+0001cc  4639              MOV      r1,r7                 ;948
 0001ce  481c              LDR      r0,|L23.576|
 0001d0  f7fffffe          BL       reset_buffer
-0001d4  7871              LDRB     r1,[r6,#1]            ;578
-0001d6  2000              MOVS     r0,#0                 ;686
+0001d4  7871              LDRB     r1,[r6,#1]            ;843
+0001d6  2000              MOVS     r0,#0                 ;951
                   |L23.472|
-0001d8  1842              ADDS     r2,r0,r1              ;688
-0001da  542a              STRB     r2,[r5,r0]            ;688
-0001dc  1c40              ADDS     r0,r0,#1              ;688
-0001de  b280              UXTH     r0,r0                 ;686
-0001e0  28ff              CMP      r0,#0xff              ;686
+0001d8  1842              ADDS     r2,r0,r1              ;953
+0001da  542a              STRB     r2,[r5,r0]            ;953
+0001dc  1c40              ADDS     r0,r0,#1              ;953
+0001de  b280              UXTH     r0,r0                 ;951
+0001e0  28ff              CMP      r0,#0xff              ;951
 0001e2  d9f9              BLS      |L23.472|
-0001e4  1c49              ADDS     r1,r1,#1              ;686
-0001e6  7071              STRB     r1,[r6,#1]            ;693
-0001e8  2201              MOVS     r2,#1                 ;695
+0001e4  1c49              ADDS     r1,r1,#1              ;951
+0001e6  7071              STRB     r1,[r6,#1]            ;958
+0001e8  2201              MOVS     r2,#1                 ;960
 0001ea  4915              LDR      r1,|L23.576|
-0001ec  4620              MOV      r0,r4                 ;695
+0001ec  4620              MOV      r0,r4                 ;960
 0001ee  f7fffffe          BL       SpiFlash_PageWrite
-0001f2  2201              MOVS     r2,#1                 ;696
+0001f2  2201              MOVS     r2,#1                 ;961
 0001f4  498b              LDR      r1,|L23.1060|
-0001f6  4620              MOV      r0,r4                 ;696
+0001f6  4620              MOV      r0,r4                 ;961
 0001f8  f7fffffe          BL       SpiFlash_PageRead
-0001fc  463a              MOV      r2,r7                 ;701
+0001fc  463a              MOV      r2,r7                 ;966
 0001fe  4989              LDR      r1,|L23.1060|
 000200  480f              LDR      r0,|L23.576|
 000202  f7fffffe          BL       compare_buffer
-000206  1c64              ADDS     r4,r4,#1              ;701
-000208  b2a4              UXTH     r4,r4                 ;678
-00020a  2c10              CMP      r4,#0x10              ;678
+000206  1c64              ADDS     r4,r4,#1              ;966
+000208  b2a4              UXTH     r4,r4                 ;943
+00020a  2c10              CMP      r4,#0x10              ;943
 00020c  d3da              BCC      |L23.452|
 00020e  a0a7              ADR      r0,|L23.1196|
                   |L23.528|
-000210  e8bd41f0          POP      {r4-r8,lr}            ;704
+000210  e8bd41f0          POP      {r4-r8,lr}            ;969
 000214  f7ffbffe          B.W      __2printf
                   |L23.536|
 000218  f7fffffe          BL       SpiFlash_ReadMidDid
-00021c  4601              MOV      r1,r0                 ;709
+00021c  4601              MOV      r1,r0                 ;974
 00021e  a0aa              ADR      r0,|L23.1224|
                   |L23.544|
-000220  e8bd41f0          POP      {r4-r8,lr}            ;710
+000220  e8bd41f0          POP      {r4-r8,lr}            ;975
 000224  f7ffbffe          B.W      __2printf
-;;;725    
+;;;990    
                           ENDP
 
                   |L23.552|
@@ -2155,30 +2449,30 @@
                           REQUIRE _printf_s
                           REQUIRE _printf_str
                   compare_buffer PROC
-;;;63     
-;;;64     void compare_buffer(uint8_t *src, uint8_t *des, int nBytes)
+;;;75     
+;;;76     void compare_buffer(uint8_t *src, uint8_t *des, int nBytes)
 000000  e92d41f0          PUSH     {r4-r8,lr}
-;;;65     {
+;;;77     {
 000004  4616              MOV      r6,r2
 000006  460f              MOV      r7,r1
 000008  4680              MOV      r8,r0
-;;;66         uint16_t i = 0;	
+;;;78         uint16_t i = 0;	
 00000a  2400              MOVS     r4,#0
-;;;67     	
-;;;68         for (i = 0; i < nBytes; i++)
-;;;69         {
-;;;70             if (src[i] != des[i])
-;;;71             {
-;;;72                 printf("error idx : %4d : 0x%2X , 0x%2X\r\n", i , src[i],des[i]);
-;;;73     			set_flag(flag_error , ENABLE);
+;;;79     	
+;;;80         for (i = 0; i < nBytes; i++)
+;;;81         {
+;;;82             if (src[i] != des[i])
+;;;83             {
+;;;84                 printf("error idx : %4d : 0x%2X , 0x%2X\r\n", i , src[i],des[i]);
+;;;85     			set_flag(flag_error , ENABLE);
 00000c  4d0f              LDR      r5,|L24.76|
 00000e  e00e              B        |L24.46|
                   |L24.16|
-000010  f8182004          LDRB     r2,[r8,r4]            ;70
-000014  5d3b              LDRB     r3,[r7,r4]            ;70
-000016  429a              CMP      r2,r3                 ;70
+000010  f8182004          LDRB     r2,[r8,r4]            ;82
+000014  5d3b              LDRB     r3,[r7,r4]            ;82
+000016  429a              CMP      r2,r3                 ;82
 000018  d007              BEQ      |L24.42|
-00001a  4621              MOV      r1,r4                 ;72
+00001a  4621              MOV      r1,r4                 ;84
 00001c  a00c              ADR      r0,|L24.80|
 00001e  f7fffffe          BL       __2printf
 000022  6868              LDR      r0,[r5,#4]  ; BitFlag
@@ -2186,32 +2480,32 @@
 000028  6068              STR      r0,[r5,#4]  ; BitFlag
                   |L24.42|
 00002a  1c64              ADDS     r4,r4,#1
-00002c  b2a4              UXTH     r4,r4                 ;68
+00002c  b2a4              UXTH     r4,r4                 ;80
                   |L24.46|
-00002e  42b4              CMP      r4,r6                 ;68
+00002e  42b4              CMP      r4,r6                 ;80
 000030  dbee              BLT      |L24.16|
-;;;74             }
-;;;75         }
-;;;76     
-;;;77     	if (!is_flag_set(flag_error))
-000032  7928              LDRB     r0,[r5,#4]  ; BitFlag
+;;;86             }
+;;;87         }
+;;;88     
+;;;89     	if (!is_flag_set(flag_error))
+000032  6868              LDR      r0,[r5,#4]  ; BitFlag
 000034  0780              LSLS     r0,r0,#30
 000036  d407              BMI      |L24.72|
-;;;78     	{
-;;;79         	printf("%s finish \r\n" , __FUNCTION__);	
+;;;90     	{
+;;;91         	printf("%s finish \r\n" , __FUNCTION__);	
 000038  490e              LDR      r1,|L24.116|
 00003a  a00f              ADR      r0,|L24.120|
 00003c  f7fffffe          BL       __2printf
-;;;80     		set_flag(flag_error , DISABLE);
+;;;92     		set_flag(flag_error , DISABLE);
 000040  6868              LDR      r0,[r5,#4]  ; BitFlag
 000042  f0200002          BIC      r0,r0,#2
 000046  6068              STR      r0,[r5,#4]  ; BitFlag
                   |L24.72|
-;;;81     	}
-;;;82     
-;;;83     }
+;;;93     	}
+;;;94     
+;;;95     }
 000048  e8bd81f0          POP      {r4-r8,pc}
-;;;84     
+;;;96     
                           ENDP
 
                   |L24.76|
@@ -2249,48 +2543,48 @@
                           REQUIRE _printf_x
                           REQUIRE _printf_longlong_hex
                   dump_buffer PROC
-;;;97     
-;;;98     void dump_buffer(uint8_t *pucBuff, int nBytes)
+;;;109    
+;;;110    void dump_buffer(uint8_t *pucBuff, int nBytes)
 000000  b570              PUSH     {r4-r6,lr}
-;;;99     {
+;;;111    {
 000002  4606              MOV      r6,r0
 000004  460d              MOV      r5,r1
-;;;100        uint16_t i = 0;
+;;;112        uint16_t i = 0;
 000006  2400              MOVS     r4,#0
-;;;101        
-;;;102        printf("dump_buffer : %2d\r\n" , nBytes);    
+;;;113        
+;;;114        printf("dump_buffer : %2d\r\n" , nBytes);    
 000008  a00b              ADR      r0,|L25.56|
 00000a  f7fffffe          BL       __2printf
-;;;103        for (i = 0 ; i < nBytes ; i++)
+;;;115        for (i = 0 ; i < nBytes ; i++)
 00000e  e00c              B        |L25.42|
                   |L25.16|
-;;;104        {
-;;;105            printf("0x%2X," , pucBuff[i]);
+;;;116        {
+;;;117            printf("0x%2X," , pucBuff[i]);
 000010  5d31              LDRB     r1,[r6,r4]
 000012  a00e              ADR      r0,|L25.76|
 000014  f7fffffe          BL       __2printf
-;;;106            if ((i+1)%8 ==0)
+;;;118            if ((i+1)%8 ==0)
 000018  0760              LSLS     r0,r4,#29
 00001a  f1b04f60          CMP      r0,#0xe0000000
 00001e  d102              BNE      |L25.38|
-;;;107            {
-;;;108                printf("\r\n");
+;;;119            {
+;;;120                printf("\r\n");
 000020  a00c              ADR      r0,|L25.84|
 000022  f7fffffe          BL       __2printf
                   |L25.38|
 000026  1c64              ADDS     r4,r4,#1
-000028  b2a4              UXTH     r4,r4                 ;103
+000028  b2a4              UXTH     r4,r4                 ;115
                   |L25.42|
-00002a  42ac              CMP      r4,r5                 ;103
+00002a  42ac              CMP      r4,r5                 ;115
 00002c  dbf0              BLT      |L25.16|
-;;;109            }            
-;;;110        }
-;;;111        printf("\r\n\r\n");
+;;;121            }            
+;;;122        }
+;;;123        printf("\r\n\r\n");
 00002e  e8bd4070          POP      {r4-r6,lr}
 000032  a009              ADR      r0,|L25.88|
 000034  f7ffbffe          B.W      __2printf
-;;;112    }
-;;;113    
+;;;124    }
+;;;125    
                           ENDP
 
                   |L25.56|
@@ -2324,79 +2618,79 @@
                           REQUIRE _printf_c
                           REQUIRE _printf_str
                   dump_buffer_hex PROC
-;;;113    
-;;;114    void  dump_buffer_hex(uint8_t *pucBuff, int nBytes)
+;;;125    
+;;;126    void  dump_buffer_hex(uint8_t *pucBuff, int nBytes)
 000000  e92d41f0          PUSH     {r4-r8,lr}
-;;;115    {
+;;;127    {
 000004  460e              MOV      r6,r1
 000006  4607              MOV      r7,r0
-;;;116        int     nIdx, i;
-;;;117    
-;;;118        nIdx = 0;
+;;;128        int     nIdx, i;
+;;;129    
+;;;130        nIdx = 0;
 000008  2500              MOVS     r5,#0
 00000a  e025              B        |L26.88|
                   |L26.12|
-;;;119        while (nBytes > 0)
-;;;120        {
-;;;121            printf("0x%04X  ", nIdx);
+;;;131        while (nBytes > 0)
+;;;132        {
+;;;133            printf("0x%04X  ", nIdx);
 00000c  4629              MOV      r1,r5
 00000e  a016              ADR      r0,|L26.104|
 000010  f7fffffe          BL       __2printf
-;;;122            for (i = 0; i < 16; i++)
+;;;134            for (i = 0; i < 16; i++)
 000014  2400              MOVS     r4,#0
                   |L26.22|
-;;;123                printf("%02X ", pucBuff[nIdx + i]);
+;;;135                printf("%02X ", pucBuff[nIdx + i]);
 000016  1928              ADDS     r0,r5,r4
 000018  5c39              LDRB     r1,[r7,r0]
 00001a  a016              ADR      r0,|L26.116|
 00001c  f7fffffe          BL       __2printf
 000020  1c64              ADDS     r4,r4,#1
-000022  2c10              CMP      r4,#0x10              ;122
+000022  2c10              CMP      r4,#0x10              ;134
 000024  dbf7              BLT      |L26.22|
-;;;124            printf("  ");
+;;;136            printf("  ");
 000026  a015              ADR      r0,|L26.124|
 000028  f7fffffe          BL       __2printf
-;;;125            for (i = 0; i < 16; i++)
+;;;137            for (i = 0; i < 16; i++)
 00002c  2400              MOVS     r4,#0
                   |L26.46|
-;;;126            {
-;;;127                if ((pucBuff[nIdx + i] >= 0x20) && (pucBuff[nIdx + i] < 127))
+;;;138            {
+;;;139                if ((pucBuff[nIdx + i] >= 0x20) && (pucBuff[nIdx + i] < 127))
 00002e  1928              ADDS     r0,r5,r4
 000030  5c39              LDRB     r1,[r7,r0]
 000032  f1a10020          SUB      r0,r1,#0x20
 000036  285f              CMP      r0,#0x5f
 000038  d203              BCS      |L26.66|
-;;;128                    printf("%c", pucBuff[nIdx + i]);
+;;;140                    printf("%c", pucBuff[nIdx + i]);
 00003a  a011              ADR      r0,|L26.128|
 00003c  f7fffffe          BL       __2printf
 000040  e002              B        |L26.72|
                   |L26.66|
-;;;129                else
-;;;130                    printf(".");
+;;;141                else
+;;;142                    printf(".");
 000042  a010              ADR      r0,|L26.132|
 000044  f7fffffe          BL       __2printf
                   |L26.72|
 000048  1c64              ADDS     r4,r4,#1
 00004a  1e76              SUBS     r6,r6,#1
-00004c  2c10              CMP      r4,#0x10              ;125
+00004c  2c10              CMP      r4,#0x10              ;137
 00004e  dbee              BLT      |L26.46|
-;;;131                nBytes--;
-;;;132            }
-;;;133            nIdx += 16;
-;;;134            printf("\n");
+;;;143                nBytes--;
+;;;144            }
+;;;145            nIdx += 16;
+;;;146            printf("\n");
 000050  a00d              ADR      r0,|L26.136|
 000052  3510              ADDS     r5,r5,#0x10
 000054  f7fffffe          BL       __2printf
                   |L26.88|
-000058  2e00              CMP      r6,#0                 ;119
+000058  2e00              CMP      r6,#0                 ;131
 00005a  dcd7              BGT      |L26.12|
-;;;135        }
-;;;136        printf("\n");
+;;;147        }
+;;;148        printf("\n");
 00005c  e8bd41f0          POP      {r4-r8,lr}
 000060  a009              ADR      r0,|L26.136|
 000062  f7ffbffe          B.W      __2printf
-;;;137    }
-;;;138    
+;;;149    }
+;;;150    
                           ENDP
 
 000066  0000              DCW      0x0000
@@ -2430,79 +2724,81 @@
                           AREA ||i.main||, CODE, READONLY, ALIGN=2
 
                   main PROC
-;;;898    
-;;;899    int main()
+;;;1181   
+;;;1182   int main()
 000000  f7fffffe          BL       SYS_Init
-;;;900    {	
-;;;901        SYS_Init();
-;;;902    	UART0_Init();
+;;;1183   {	
+;;;1184       SYS_Init();
+;;;1185   	UART0_Init();
 000004  f7fffffe          BL       UART0_Init
-;;;903    
-;;;904    	LED_Init();
+;;;1186   
+;;;1187   	LED_Init();
 000008  f7fffffe          BL       LED_Init
-;;;905    	TIMER1_Init();
+;;;1188   	TIMER1_Init();
 00000c  f7fffffe          BL       TIMER1_Init
-;;;906    
-;;;907    	SpiFlash_Init();
+;;;1189   
+;;;1190   	SpiFlash_Init();
 000010  f7fffffe          BL       SpiFlash_Init
-;;;908    
-;;;909    
-;;;910        /* Got no where to go, just loop forever */
-;;;911        while(1)
-;;;912        {
-;;;913    //		TIMER0_Polling(1000);
-;;;914    
-;;;915    		if (is_flag_set(flag_uart_rx))
-000014  4903              LDR      r1,|L27.36|
+;;;1191   
+;;;1192   
+;;;1193       /* Got no where to go, just loop forever */
+;;;1194       while(1)
+;;;1195       {
+;;;1196   //		TIMER0_Polling(1000);
+;;;1197   
+;;;1198   		if (is_flag_set(flag_uart_rx))
+000014  4804              LDR      r0,|L27.40|
                   |L27.22|
-000016  6848              LDR      r0,[r1,#4]  ; BitFlag
-000018  07c2              LSLS     r2,r0,#31
+000016  6841              LDR      r1,[r0,#4]  ; BitFlag
+000018  07c9              LSLS     r1,r1,#31
 00001a  d0fc              BEQ      |L27.22|
-;;;916    		{
-;;;917    			set_flag(flag_uart_rx,DISABLE);
-00001c  f0200001          BIC      r0,r0,#1
-000020  6048              STR      r0,[r1,#4]  ; BitFlag
-000022  e7f8              B        |L27.22|
-;;;918    //			UARTx_Process();
-;;;919    		}
-;;;920    	
-;;;921        }
-;;;922    
-;;;923    }
-;;;924    
+;;;1199   		{
+;;;1200   			set_flag(flag_uart_rx,DISABLE);
+00001c  6841              LDR      r1,[r0,#4]  ; BitFlag
+00001e  f0210101          BIC      r1,r1,#1
+000022  6041              STR      r1,[r0,#4]  ; BitFlag
+000024  e7f7              B        |L27.22|
+;;;1201   //			UARTx_Process();
+;;;1202   		}
+;;;1203   	
+;;;1204       }
+;;;1205   
+;;;1206   }
+;;;1207   
                           ENDP
 
-                  |L27.36|
+000026  0000              DCW      0x0000
+                  |L27.40|
                           DCD      ||.data||
 
                           AREA ||i.reset_buffer||, CODE, READONLY, ALIGN=1
 
                   reset_buffer PROC
-;;;84     
-;;;85     void reset_buffer(uint8_t *pucBuff, int nBytes)
+;;;96     
+;;;97     void reset_buffer(uint8_t *pucBuff, int nBytes)
 000000  2200              MOVS     r2,#0
-;;;86     {
-;;;87     	#if 1
-;;;88         uint16_t i = 0;	
+;;;98     {
+;;;99     	#if 1
+;;;100        uint16_t i = 0;	
 000002  4613              MOV      r3,r2
 000004  e002              B        |L28.12|
                   |L28.6|
-;;;89         for ( i = 0; i < nBytes; i++)
-;;;90         {
-;;;91             pucBuff[i] = 0x00;
+;;;101        for ( i = 0; i < nBytes; i++)
+;;;102        {
+;;;103            pucBuff[i] = 0x00;
 000006  5483              STRB     r3,[r0,r2]
 000008  1c52              ADDS     r2,r2,#1
-00000a  b292              UXTH     r2,r2                 ;89
+00000a  b292              UXTH     r2,r2                 ;101
                   |L28.12|
-00000c  428a              CMP      r2,r1                 ;89
+00000c  428a              CMP      r2,r1                 ;101
 00000e  dbfa              BLT      |L28.6|
-;;;92         }	
-;;;93     	#else	//extra 20 bytes , with <string.h>
-;;;94     	memset(pucBuff, 0, nBytes * (sizeof(pucBuff[0]) ));
-;;;95     	#endif
-;;;96     }
+;;;104        }	
+;;;105    	#else	//extra 20 bytes , with <string.h>
+;;;106    	memset(pucBuff, 0, nBytes * (sizeof(pucBuff[0]) ));
+;;;107    	#endif
+;;;108    }
 000010  4770              BX       lr
-;;;97     
+;;;109    
                           ENDP
 
 

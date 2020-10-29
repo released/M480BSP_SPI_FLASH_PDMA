@@ -1,6 +1,21 @@
 # M480BSP_SPI_FLASH_PDMA
  M480BSP_SPI_FLASH_PDMA
 
+update @ 2020/10/29
+
+1. Add M487_EVM_SPI_FLASH define , to test M487 EVM SPI flash with QSPI dual mode , under QSPI 48MHz clock speed
+
+In M487 SPI flash pin define layout , 
+
+PC0 : QSPI0_MOSI0 (SPIM_MOSI)
+
+PC1 : QSPI0_MISO0 (SPIM_MISO)
+
+PC2 : QSPI0_CLK (SPIM_CLK)
+
+PC3 : QSPI0_SS (SPIM_SS)
+
+
 update @ 2020/06/17
 
 1. with SPI inital to access SPI flash , by regular write/read and PDMA write/read

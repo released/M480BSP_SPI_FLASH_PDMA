@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include "NuMicro.h"
 
+//#define CUSTOM_SPI_FLASH_PIN
+#define M487_EVM_SPI_FLASH
 
 #define LED_R							(PH0)
 #define LED_Y							(PH1)
@@ -15,8 +17,18 @@
 
 #define TEST_NUMBER 					(16)   /* page numbers */
 
+#if defined (M487_EVM_SPI_FLASH)		//W25Q32JV
+#define SPI_FLASH_PORT  					(QSPI0)
+#else
 #define SPI_FLASH_PORT  					(SPI0)
+#endif
+
+#if defined (M487_EVM_SPI_FLASH)		//W25Q32JV
+#define SPI_CLK_FREQ  					(48000000)	//(20000000)
+#else
 #define SPI_CLK_FREQ  					(1000000)	//(20000000)
+#endif
+
 
 #define SPI_MASTER_TX_DMA_CH 			(9)
 #define SPI_MASTER_RX_DMA_CH 			(10)
@@ -28,7 +40,6 @@ uint8_t RxBuffer[SPI_FLASH_PAGE_BYTE] = {0};
 
 uint8_t SPI_FLASH_page_counter = 0;
 
-//#define CUSTOM_SPI_FLASH_PIN
 
 /*
 	Device ID (command: AB hex) : 15
@@ -36,6 +47,7 @@ uint8_t SPI_FLASH_page_counter = 0;
 	RDID (command: 9F hex) : C2 20 16	
 */
 #define CUSTOM_SPI_FLASH_ID				(0xC215)	//MX25L3205D
+#define EVM_SPI_FALSH_ID					(0xEF15)		//W25Q32JV
 
 enum
 {
@@ -52,7 +64,7 @@ typedef enum{
 	flag_DEFAULT	
 }Flag_Index;
 
-uint32_t BitFlag = 0;
+volatile uint32_t BitFlag = 0;
 #define BitFlag_ON(flag)							(BitFlag|=flag)
 #define BitFlag_OFF(flag)							(BitFlag&=~flag)
 #define BitFlag_READ(flag)							((BitFlag&flag)?1:0)
@@ -148,7 +160,13 @@ void SPI_Master_RX_PDMA(uint8_t* Rx , uint16_t len)
     /* Set source/destination address and attributes */
     PDMA_SetTransferAddr(PDMA,SPI_MASTER_RX_DMA_CH, (uint32_t)&SPI_FLASH_PORT->RX, PDMA_SAR_FIX, (uint32_t)Rx, PDMA_DAR_INC);
     /* Set request source; set basic mode. */
+
+	#if defined (M487_EVM_SPI_FLASH)
+    PDMA_SetTransferMode(PDMA,SPI_MASTER_RX_DMA_CH, PDMA_QSPI0_RX, FALSE, 0);
+	#else
     PDMA_SetTransferMode(PDMA,SPI_MASTER_RX_DMA_CH, PDMA_SPI0_RX, FALSE, 0);
+	#endif
+	
     /* Single request type. SPI only support PDMA single request type. */
     PDMA_SetBurstType(PDMA,SPI_MASTER_RX_DMA_CH, PDMA_REQ_SINGLE, PDMA_BURST_128);
     /* Disable table interrupt */
@@ -199,7 +217,13 @@ void SPI_Master_TX_PDMA(uint8_t* Tx , uint16_t len)
     /* Set source/destination address and attributes */
     PDMA_SetTransferAddr(PDMA,SPI_MASTER_TX_DMA_CH, (uint32_t)Tx, PDMA_SAR_INC, (uint32_t)&SPI_FLASH_PORT->TX, PDMA_DAR_FIX);
     /* Set request source; set basic mode. */
+	
+	#if defined (M487_EVM_SPI_FLASH)
+    PDMA_SetTransferMode(PDMA,SPI_MASTER_TX_DMA_CH, PDMA_QSPI0_TX, FALSE, 0);
+	#else
     PDMA_SetTransferMode(PDMA,SPI_MASTER_TX_DMA_CH, PDMA_SPI0_TX, FALSE, 0);
+	#endif	
+	
     /* Single request type. SPI only support PDMA single request type. */
     PDMA_SetBurstType(PDMA,SPI_MASTER_TX_DMA_CH, PDMA_REQ_SINGLE, PDMA_BURST_128);
     /* Disable table interrupt */
@@ -242,6 +266,33 @@ uint16_t SpiFlash_ReadMidDid(void)
 {
     uint8_t u8RxData[6], u8IDCnt = 0;
 
+	#if defined (M487_EVM_SPI_FLASH)
+    // /CS: active
+    QSPI_SET_SS_LOW(SPI_FLASH_PORT);
+
+    // send Command: 0x90, Read Manufacturer/Device ID
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x90);
+
+    // send 24-bit '0', dummy
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+
+    // receive 16-bit
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+
+    // wait tx finish
+    while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+
+    // /CS: de-active
+    QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+
+    while(!QSPI_GET_RX_FIFO_EMPTY_FLAG(SPI_FLASH_PORT))
+        u8RxData[u8IDCnt ++] = QSPI_READ_RX(SPI_FLASH_PORT);
+
+	#else
+	
     // /CS: active
     SPI_SET_SS_LOW(SPI_FLASH_PORT);
 
@@ -266,11 +317,44 @@ uint16_t SpiFlash_ReadMidDid(void)
     while(!SPI_GET_RX_FIFO_EMPTY_FLAG(SPI_FLASH_PORT))
         u8RxData[u8IDCnt ++] = SPI_READ_RX(SPI_FLASH_PORT);
 
+	#endif
+
     return ( (u8RxData[4]<<8) | u8RxData[5] );
 }
 
 void SpiFlash_ChipErase(void)
 {
+	#if defined (M487_EVM_SPI_FLASH)
+    // /CS: active
+    QSPI_SET_SS_LOW(SPI_FLASH_PORT);
+
+    // send Command: 0x06, Write enable
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
+
+    // wait tx finish
+    while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+
+    // /CS: de-active
+    QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+
+    //////////////////////////////////////////
+
+    // /CS: active
+    QSPI_SET_SS_LOW(SPI_FLASH_PORT);
+
+    // send Command: 0xC7, Chip Erase
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0xC7);
+
+    // wait tx finish
+    while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+
+    // /CS: de-active
+    QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+
+    QSPI_ClearRxFIFO(SPI_FLASH_PORT);
+
+	#else
+
     // /CS: active
     SPI_SET_SS_LOW(SPI_FLASH_PORT);
 
@@ -298,10 +382,35 @@ void SpiFlash_ChipErase(void)
     SPI_SET_SS_HIGH(SPI_FLASH_PORT);
 
     SPI_ClearRxFIFO(SPI_FLASH_PORT);
+	#endif
 }
 
 uint8_t SpiFlash_ReadStatusReg(void)
 {
+	#if defined (M487_EVM_SPI_FLASH)
+
+    // /CS: active
+    QSPI_SET_SS_LOW(SPI_FLASH_PORT);
+
+    // send Command: 0x05, Read status register
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x05);
+
+    // read status
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+
+    // wait tx finish
+    while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+
+    // /CS: de-active
+    QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+
+    // skip first rx data
+    QSPI_READ_RX(SPI_FLASH_PORT);
+
+    return (QSPI_READ_RX(SPI_FLASH_PORT) & 0xff);
+
+	
+	#else
     // /CS: active
     SPI_SET_SS_LOW(SPI_FLASH_PORT);
 
@@ -321,10 +430,44 @@ uint8_t SpiFlash_ReadStatusReg(void)
     SPI_READ_RX(SPI_FLASH_PORT);
 
     return (SPI_READ_RX(SPI_FLASH_PORT) & 0xff);
+
+	#endif
 }
 
 void SpiFlash_WriteStatusReg(uint8_t u8Value)
 {
+	#if defined (M487_EVM_SPI_FLASH)
+   // /CS: active
+    QSPI_SET_SS_LOW(SPI_FLASH_PORT);
+
+    // send Command: 0x06, Write enable
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
+
+    // wait tx finish
+    while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+
+    // /CS: de-active
+    QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+
+    ///////////////////////////////////////
+
+    // /CS: active
+    QSPI_SET_SS_LOW(SPI_FLASH_PORT);
+
+    // send Command: 0x01, Write status register
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x01);
+
+    // write status
+    QSPI_WRITE_TX(SPI_FLASH_PORT, u8Value);
+
+    // wait tx finish
+    while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+
+    // /CS: de-active
+    QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+
+	#else
+
     // /CS: active
     SPI_SET_SS_LOW(SPI_FLASH_PORT);
 
@@ -353,6 +496,7 @@ void SpiFlash_WriteStatusReg(uint8_t u8Value)
 
     // /CS: de-active
     SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+	#endif
 }
 
 void SpiFlash_WaitReady(void)
@@ -381,6 +525,63 @@ void SpiFlash_WaitReady(void)
 void SpiFlash_NormalPageProgram(uint32_t StartAddress, uint8_t *u8DataBuffer , uint8_t EnablePDMA)
 {
     uint32_t i = 0;
+
+	#if defined (M487_EVM_SPI_FLASH)
+
+   // /CS: active
+    QSPI_SET_SS_LOW(SPI_FLASH_PORT);
+
+    // send Command: 0x06, Write enable
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
+
+    // wait tx finish
+    while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+
+    // /CS: de-active
+    QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+
+
+    // /CS: active
+    QSPI_SET_SS_LOW(SPI_FLASH_PORT);
+
+    // send Command: 0x02, Page program
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x02);
+
+    // send 24-bit start address
+    QSPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>16) & 0xFF);
+    QSPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>8)  & 0xFF);
+    QSPI_WRITE_TX(SPI_FLASH_PORT, StartAddress       & 0xFF);
+
+
+    // write data
+	if (EnablePDMA)
+	{
+		SPI_Master_TX_PDMA(u8DataBuffer , SPI_FLASH_PAGE_BYTE);
+	}
+	else
+	{
+	    while(1)
+	    {
+	        if(!QSPI_GET_TX_FIFO_FULL_FLAG(SPI_FLASH_PORT))
+	        {
+//				printf("%3d\r\n" , i);			
+	            QSPI_WRITE_TX(SPI_FLASH_PORT, u8DataBuffer[i]);
+	            if (i++ >= (SPI_FLASH_PAGE_BYTE-1) )
+					break;				
+	        }
+	    }
+	}
+
+    // wait tx finish
+    while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+
+    // /CS: de-active
+    QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+
+    QSPI_ClearRxFIFO(SPI_FLASH_PORT);
+
+
+	#else
 	
     // /CS: active
     SPI_SET_SS_LOW(SPI_FLASH_PORT);
@@ -433,6 +634,7 @@ void SpiFlash_NormalPageProgram(uint32_t StartAddress, uint8_t *u8DataBuffer , u
     SPI_SET_SS_HIGH(SPI_FLASH_PORT);
 
     SPI_ClearRxFIFO(SPI_FLASH_PORT);
+	#endif
 }
 
 void SpiFlash_PageWrite(uint32_t page_no, uint8_t *u8DataBuffer , uint8_t EnablePDMA)
@@ -445,20 +647,21 @@ void SpiFlash_NormalRead(uint32_t StartAddress, uint8_t *u8DataBuffer , uint8_t 
 {
     uint32_t i = 0;
 
-    // /CS: active
-    SPI_SET_SS_LOW(SPI_FLASH_PORT);
+	#if defined (M487_EVM_SPI_FLASH)
+   // /CS: active
+    QSPI_SET_SS_LOW(SPI_FLASH_PORT);
 
     // send Command: 0x03, Read data
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x03);
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x03);
 
     // send 24-bit start address
-    SPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>16) & 0xFF);
-    SPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>8)  & 0xFF);
-    SPI_WRITE_TX(SPI_FLASH_PORT, StartAddress       & 0xFF);
+    QSPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>16) & 0xFF);
+    QSPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>8)  & 0xFF);
+    QSPI_WRITE_TX(SPI_FLASH_PORT, StartAddress       & 0xFF);
 
-    while(SPI_IS_BUSY(SPI_FLASH_PORT));
+    while(QSPI_IS_BUSY(SPI_FLASH_PORT));
     // clear RX buffer
-    SPI_ClearRxFIFO(SPI_FLASH_PORT);
+    QSPI_ClearRxFIFO(SPI_FLASH_PORT);
 
     // read data
     if (EnablePDMA)
@@ -469,17 +672,58 @@ void SpiFlash_NormalRead(uint32_t StartAddress, uint8_t *u8DataBuffer , uint8_t 
 	{
 	    for(i = 0 ; i < SPI_FLASH_PAGE_BYTE ; i++)
 	    {
-	        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
-	        while(SPI_IS_BUSY(SPI_FLASH_PORT));
-	        u8DataBuffer[i] = SPI_READ_RX(SPI_FLASH_PORT);
+	        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+	        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+	        u8DataBuffer[i] = QSPI_READ_RX(SPI_FLASH_PORT);
 	    }
 	}
 
     // wait tx finish
-    while(SPI_IS_BUSY(SPI_FLASH_PORT));
+    while(QSPI_IS_BUSY(SPI_FLASH_PORT));
 
     // /CS: de-active
-    SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+    QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+
+	#else
+
+    // /CS: active
+    QSPI_SET_SS_LOW(SPI_FLASH_PORT);
+
+    // send Command: 0x03, Read data
+    QSPI_WRITE_TX(SPI_FLASH_PORT, 0x03);
+
+    // send 24-bit start address
+    QSPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>16) & 0xFF);
+    QSPI_WRITE_TX(SPI_FLASH_PORT, (StartAddress>>8)  & 0xFF);
+    QSPI_WRITE_TX(SPI_FLASH_PORT, StartAddress       & 0xFF);
+
+    while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+    // clear RX buffer
+    QSPI_ClearRxFIFO(SPI_FLASH_PORT);
+
+    // read data
+    if (EnablePDMA)
+    {
+		SPI_Master_RX_PDMA(u8DataBuffer , SPI_FLASH_PAGE_BYTE);
+    }
+	else
+	{
+	    for(i = 0 ; i < SPI_FLASH_PAGE_BYTE ; i++)
+	    {
+	        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+	        while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+	        u8DataBuffer[i] = QSPI_READ_RX(SPI_FLASH_PORT);
+	    }
+	}
+
+    // wait tx finish
+    while(QSPI_IS_BUSY(SPI_FLASH_PORT));
+
+    // /CS: de-active
+    QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+	#endif
+
+	
 }
 
 void SpiFlash_PageRead(uint32_t page_no, uint8_t *u8DataBuffer , uint8_t EnablePDMA)
@@ -506,14 +750,35 @@ void SpiFlash_Init(void)
 {
     uint16_t u16ID = 0;
     uint16_t i = 0;
-	
+
+
+	#if defined (M487_EVM_SPI_FLASH)	//PC4 , PC5 pull high
+	GPIO_SetMode(PC, (BIT4 | BIT5) ,GPIO_MODE_OUTPUT);
+	PC4 = 1;
+	PC5 = 1;	
+	TIMER_Delay(TIMER0, 1000);	
+	#endif
+
+	#if defined (M487_EVM_SPI_FLASH)
+    /* Configure SPI_FLASH_PORT as a master, MSB first, 8-bit transaction, SPI Mode-0 timing, clock is 20MHz */
+    QSPI_Open(SPI_FLASH_PORT, SPI_MASTER, SPI_MODE_0, 8, SPI_CLK_FREQ);
+
+    /* Disable auto SS function, control SS signal manually. */
+    QSPI_DisableAutoSS(SPI_FLASH_PORT);
+    QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+
+	#else
     /* Configure SPI_FLASH_PORT as a master, MSB first, 8-bit transaction, SPI Mode-0 timing, clock is 20MHz */
     SPI_Open(SPI_FLASH_PORT, SPI_MASTER, SPI_MODE_0, 8, SPI_CLK_FREQ);
 
     /* Disable auto SS function, control SS signal manually. */
     SPI_DisableAutoSS(SPI_FLASH_PORT);
     SPI_SET_SS_HIGH(SPI_FLASH_PORT);
+	#endif
 
+	/*
+		W25Q32JV : 0xEF15
+	*/
 	u16ID = SpiFlash_ReadMidDid();
 	printf("ID : 0x%2X\r\n" , u16ID);
 
@@ -768,7 +1033,7 @@ void UART0_Init(void)
 void TMR1_IRQHandler(void)
 {
 	static uint16_t CNT = 0;	
-//	static uint32_t log = 0;	
+	static uint32_t log = 0;	
 	
     if(TIMER_GetIntFlag(TIMER1) == 1)
     {
@@ -845,8 +1110,13 @@ void SYS_Init(void)
     /* Select UART clock source from HXT */
     CLK_SetModuleClock(UART0_MODULE, CLK_CLKSEL1_UART0SEL_HXT, CLK_CLKDIV0_UART0(1));
 
+	#if defined (M487_EVM_SPI_FLASH)	
+    CLK_SetModuleClock(QSPI0_MODULE, CLK_CLKSEL2_QSPI0SEL_PCLK0, MODULE_NoMsk);
+    CLK_EnableModuleClock(QSPI0_MODULE);
+	#else
     CLK_SetModuleClock(SPI0_MODULE, CLK_CLKSEL2_SPI0SEL_PCLK1, MODULE_NoMsk);
     CLK_EnableModuleClock(SPI0_MODULE);
+	#endif
 
     CLK_EnableModuleClock(PDMA_MODULE);
 
@@ -863,7 +1133,6 @@ void SYS_Init(void)
 
 	//conflict with EVM UART pin , PB12/PB13
 	#if defined (CUSTOM_SPI_FLASH_PIN)	
-
     /* Setup SPI0 multi-function pins */
     SYS->GPB_MFPH |= SYS_GPB_MFPH_PB12MFP_SPI0_MOSI | SYS_GPB_MFPH_PB13MFP_SPI0_MISO | SYS_GPB_MFPH_PB14MFP_SPI0_CLK | SYS_GPB_MFPH_PB15MFP_SPI0_SS;
 
@@ -873,6 +1142,20 @@ void SYS_Init(void)
     /* Enable SPI0 I/O high slew rate */
     GPIO_SetSlewCtl(PB, 0xF, GPIO_SLEWCTL_HIGH);
 
+	#elif defined (M487_EVM_SPI_FLASH)
+    SYS->GPC_MFPL &= ~(SYS_GPC_MFPL_PC2MFP_Msk | SYS_GPC_MFPL_PC3MFP_Msk| SYS_GPC_MFPL_PC1MFP_Msk| SYS_GPC_MFPL_PC0MFP_Msk);
+	
+    /* Setup SPI0 multi-function pins */
+    SYS->GPC_MFPL |= SYS_GPC_MFPL_PC0MFP_QSPI0_MOSI0 | SYS_GPC_MFPL_PC1MFP_QSPI0_MISO0 | SYS_GPC_MFPL_PC2MFP_QSPI0_CLK | SYS_GPC_MFPL_PC3MFP_QSPI0_SS;
+
+    /* Enable SPI0 clock pin (PA2) schmitt trigger */
+//    PC->SMTEN |= GPIO_SMTEN_SMTEN1_Msk;
+    PC->SMTEN |= (GPIO_SMTEN_SMTEN0_Msk | GPIO_SMTEN_SMTEN1_Msk | GPIO_SMTEN_SMTEN2_Msk | GPIO_SMTEN_SMTEN3_Msk);
+	
+    /* Enable SPI0 I/O high slew rate */
+//    GPIO_SetSlewCtl(PC, 0xF, GPIO_SLEWCTL_HIGH);
+	GPIO_SetSlewCtl(PC, (BIT0 | BIT1 | BIT2 | BIT3), GPIO_SLEWCTL_FAST);
+	
 	#else
     /* Setup SPI0 multi-function pins */
     SYS->GPA_MFPL |= SYS_GPA_MFPL_PA0MFP_SPI0_MOSI | SYS_GPA_MFPL_PA1MFP_SPI0_MISO | SYS_GPA_MFPL_PA2MFP_SPI0_CLK | SYS_GPA_MFPL_PA3MFP_SPI0_SS;
